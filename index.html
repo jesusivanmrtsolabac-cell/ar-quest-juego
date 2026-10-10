@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-  <title>AR Quest 2.0 - Robot Móvil</title>
+  <title>AR Quest 2.0</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
@@ -15,41 +15,30 @@
       font-family: Arial, sans-serif;
       overflow: hidden;
       width: 100vw; height: 100vh;
-      position: fixed;
-      top: 0; left: 0;
+      position: fixed; top: 0; left: 0;
     }
-
-    /* Panel de puntuación - dentro de la escena, va flotando */
     #panel {
       position: fixed; top: 10px; left: 10px;
-      z-index: 999999;
-      background: rgba(0,0,0,0.85); color: white;
-      padding: 10px 14px; border-radius: 10px;
-      font-size: 15px; min-width: 130px;
-      font-family: Arial, sans-serif;
+      z-index: 999999; background: rgba(0,0,0,0.85);
+      color: white; padding: 10px 14px; border-radius: 10px;
+      font-size: 15px; min-width: 130px; font-family: Arial, sans-serif;
     }
     #panel div { margin: 3px 0; }
     #reiniciar {
       margin-top: 6px; padding: 6px 10px; border: none;
       border-radius: 6px; cursor: pointer; width: 100%;
-      background: #ff6b6b; color: white; font-weight: bold;
-      font-size: 13px;
+      background: #ff6b6b; color: white; font-weight: bold; font-size: 13px;
     }
-
     #nivelInfo {
       position: fixed; top: 10px; right: 10px;
-      z-index: 999999;
-      background: rgba(0,0,0,0.85); color: #FFD700;
-      padding: 10px 14px; border-radius: 10px;
-      font-size: 15px; font-weight: bold;
-      font-family: Arial, sans-serif;
+      z-index: 999999; background: rgba(0,0,0,0.85);
+      color: #FFD700; padding: 10px 14px; border-radius: 10px;
+      font-size: 15px; font-weight: bold; font-family: Arial, sans-serif;
     }
-
     #victoria {
       display: none; position: fixed; inset: 0;
-      z-index: 9999999;
-      background: rgba(0,0,0,0.92); color: white;
-      text-align: center; padding-top: 22vh;
+      z-index: 9999999; background: rgba(0,0,0,0.92);
+      color: white; text-align: center; padding-top: 22vh;
       font-family: Arial, sans-serif;
     }
     #victoria h1 { font-size: 40px; color: #FFD700; margin: 10px; }
@@ -59,7 +48,6 @@
       border: none; border-radius: 10px; cursor: pointer;
       background: #51cf66; color: white; font-weight: bold;
     }
-
     .a-enter-vr { display: none !important; }
     a-scene { width: 100vw !important; height: 100vh !important; }
   </style>
@@ -67,7 +55,6 @@
 
 <body>
 
-  <!-- Panel -->
   <div id="panel">
     <div>Puntos: <span id="puntos">0</span></div>
     <div>Tiempo: <span id="tiempo">90</span> s</div>
@@ -77,7 +64,6 @@
 
   <div id="nivelInfo">Nivel <span id="nivel">1</span> / 3</div>
 
-  <!-- Victoria -->
   <div id="victoria">
     <h1>🏆 ¡VICTORIA! 🏆</h1>
     <p id="puntosFinales">Puntos: 0</p>
@@ -96,14 +82,13 @@
       <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
-      <!-- 🤖 ROBOT -->
+      <!-- 🤖 ROBOT SIN GIRO AUTOMÁTICO -->
       <a-entity
         id="robot"
         gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
         position="0 0 0"
         scale="0.3 0.3 0.3"
-        rotation="0 0 0"
-        animation__idle="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear;">
+        rotation="0 0 0">
         <a-cone position="0 0.5 -0.6" radius-bottom="0.15" radius-top="0"
                 height="0.3" color="#FFD700" rotation="90 0 0"></a-cone>
       </a-entity>
@@ -115,15 +100,9 @@
 
     <a-entity camera></a-entity>
 
-    <!-- 🎮 CONTROLES FLOTANTES DENTRO DE LA ESCENA (esto sí funciona en móvil) -->
-    <a-entity id="controles-3d" position="0 0 -2">
-      <!-- Fondo semitransparente del D-Pad -->
-      <a-plane position="0 0 0" width="1.2" height="1.2" color="#000" opacity="0.5" rotation="0 0 0"></a-plane>
-    </a-entity>
-
   </a-scene>
 
-  <!-- 🎮 CONTROLES HTML (fuera de la escena) -->
+  <!-- 🎮 D-PAD ACTUALIZADO -->
   <div id="controles" style="
     position: fixed !important;
     bottom: 20px !important;
@@ -134,13 +113,12 @@
     grid-template-rows: 62px 62px 62px;
     gap: 6px;
     pointer-events: auto !important;
-    transform: translateZ(9999px);
   ">
-    <button onclick="mover('arriba')" style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬆️</button>
-    <button onclick="girar('izq')"    style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬅️</button>
-    <button onclick="accion()"        style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">🎯</button>
-    <button onclick="girar('der')"    style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">➡️</button>
-    <button onclick="mover('abajo')"  style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬇️</button>
+    <button onclick="mover('arriba')"    style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬆️</button>
+    <button onclick="mover('izquierda')" style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬅️</button>
+    <button onclick="girar('izq')"       style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">🔄</button>
+    <button onclick="mover('derecha')"   style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">➡️</button>
+    <button onclick="mover('abajo')"     style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬇️</button>
   </div>
 
 <script>
@@ -156,8 +134,9 @@ const ENEMIGOS_N = { 1: 2,  2: 4,  3: 6 };
 
 let robotX = 0, robotZ = 0;
 let robotRot = 0;
-let robotVel = 0.08;
-let robotGiro = 15;
+const robotVel = 0.08;
+const robotGiro = 20;      // grados por pulsación del botón central
+const LIMITE_MARCADOR = 0.9;
 
 const $puntos = document.getElementById('puntos');
 const $tiempo = document.getElementById('tiempo');
@@ -188,33 +167,31 @@ function actualizarRobot() {
   robot.setAttribute('rotation', `0 ${robotRot} 0`);
 }
 
+/* 🕹️ Movimiento directo en pantalla */
 function mover(dir) {
   if (!partidaActiva) return;
-  const rad = (robotRot * Math.PI) / 180;
-  const dx = Math.sin(rad) * robotVel;
-  const dz = Math.cos(rad) * robotVel;
 
-  if (dir === 'arriba') { robotX -= dx; robotZ -= dz; }
-  if (dir === 'abajo')  { robotX += dx; robotZ += dz; }
+  if (dir === 'arriba')    robotZ -= robotVel;
+  if (dir === 'abajo')     robotZ += robotVel;
+  if (dir === 'izquierda') robotX -= robotVel;
+  if (dir === 'derecha')   robotX += robotVel;
 
-  robotX = Math.max(-1.2, Math.min(1.2, robotX));
-  robotZ = Math.max(-1.2, Math.min(1.2, robotZ));
+  // 🎯 No salirse del marcador
+  robotX = Math.max(-LIMITE_MARCADOR, Math.min(LIMITE_MARCADOR, robotX));
+  robotZ = Math.max(-LIMITE_MARCADOR, Math.min(LIMITE_MARCADOR, robotZ));
 
   actualizarRobot();
   detectarColisiones();
 }
 
+/* 🔄 Girar sobre su eje */
 function girar(sentido) {
   if (!partidaActiva) return;
   robotRot += (sentido === 'izq' ? -robotGiro : robotGiro);
   actualizarRobot();
-  detectarColisiones();
 }
 
-function accion() {
-  if (!partidaActiva) return;
-  sonar(600, 0.1, 'square');
-}
+function accion() { if (partidaActiva) sonar(600, 0.1, 'square'); }
 
 function detectarColisiones() {
   const radioColision = 0.35;
@@ -227,11 +204,8 @@ function detectarColisiones() {
     const dist = Math.sqrt(dx*dx + dz*dz);
 
     if (dist < radioColision) {
-      if (obj.classList.contains('moneda')) {
-        puntos += 10; sMoneda();
-      } else if (obj.classList.contains('enemigo')) {
-        puntos -= 5; sEnemigo();
-      }
+      if (obj.classList.contains('moneda'))      { puntos += 10; sMoneda();  }
+      else if (obj.classList.contains('enemigo')){ puntos -= 5;  sEnemigo(); }
       if (puntos < 0) puntos = 0;
       $puntos.textContent = puntos;
       obj.setAttribute('visible', false);
@@ -240,8 +214,8 @@ function detectarColisiones() {
 }
 
 function posAleatoria() {
-  const x = (Math.random() * 2.0 - 1.0).toFixed(2);
-  const z = (Math.random() * 2.0 - 1.0).toFixed(2);
+  const x = (Math.random() * 1.6 - 0.8).toFixed(2);
+  const z = (Math.random() * 1.6 - 0.8).toFixed(2);
   const y = (0.4 + Math.random() * 0.5).toFixed(2);
   return `${x} ${y} ${z}`;
 }
