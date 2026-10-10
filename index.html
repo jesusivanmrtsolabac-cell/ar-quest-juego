@@ -12,7 +12,7 @@
                  width:100vw; height:100vh; position:fixed; top:0; left:0; }
     #panel { position:fixed; top:10px; left:10px; z-index:999999;
              background:rgba(0,0,0,0.85); color:white; padding:10px 14px;
-             border-radius:10px; font-size:15px; min-width:130px; }
+             border-radius:10px; font-size:15px; min-width:150px; }
     #panel div { margin:3px 0; }
     #reiniciar { margin-top:6px; padding:6px 10px; border:none; border-radius:6px;
                  cursor:pointer; width:100%; background:#ff6b6b; color:white;
@@ -38,6 +38,7 @@
   <div id="panel">
     <div>Puntos: <span id="puntos">0</span></div>
     <div>Tiempo: <span id="tiempo">90</span> s</div>
+    <div>Monedas: <span id="monedas">0/0</span></div>
     <div>Récord: <span id="record">0</span></div>
     <button id="reiniciar">🔄 Reiniciar</button>
   </div>
@@ -91,12 +92,14 @@
   </div>
 
 <script>
+/* =========================
+   ESTADO DEL JUEGO
+   ========================= */
 let puntos = 0, tiempo = 90, nivel = 1;
 let partidaActiva = true;
 let intervaloTiempo = null;
 let record = parseInt(localStorage.getItem('arQuestRecord')) || 0;
-let monedasTotales = 0;
-let monedasRecogidas = 0;
+let nivelCompletado = false;
 
 const MAX_NIVEL = 3;
 const TIEMPOS    = { 1: 90, 2: 60, 3: 40 };
@@ -111,25 +114,34 @@ const LIMITE_MARCADOR = 0.35;
 
 const $puntos = document.getElementById('puntos');
 const $tiempo = document.getElementById('tiempo');
+const $monedas = document.getElementById('monedas');
 const $record = document.getElementById('record');
 const $nivel  = document.getElementById('nivel');
 $record.textContent = record;
 
+/* =========================
+   SONIDOS
+   ========================= */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function sonar(freq=800, dur=0.12, tipo='sine'){
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = tipo; o.frequency.value = freq;
-  o.connect(g); g.connect(audioCtx.destination);
-  g.gain.setValueAtTime(0.15, audioCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+dur);
-  o.start(); o.stop(audioCtx.currentTime+dur);
+  try {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = tipo; o.frequency.value = freq;
+    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+dur);
+    o.start(); o.stop(audioCtx.currentTime+dur);
+  } catch(e) {}
 }
 const sonidoMoneda  = () => sonar(1200, 0.15, 'square');
 const sonidoEnemigo = () => sonar(180, 0.35, 'sawtooth');
 const sonidoVictoria = () => [523,659,784,1046].forEach((f,i)=>
   setTimeout(()=>sonar(f,0.25,'triangle'), i*180));
 
+/* =========================
+   MOVIMIENTO DEL ROBOT
+   ========================= */
 function actualizarRobot(){
   const robot = document.getElementById('robot');
   if(!robot) return;
@@ -155,19 +167,36 @@ function girar(sentido){
   actualizarRobot();
 }
 
+/* =========================
+   ACTUALIZAR CONTADOR DE MONEDAS
+   ========================= */
+function actualizarContadorMonedas(){
+  const total = document.querySelectorAll('.moneda').length;
+  const visibles = document.querySelectorAll('.moneda[visible="true"], .moneda:not([visible])').length;
+  const recogidas = total - visibles;
+  $monedas.textContent = `${recogidas}/${total}`;
+  return { total, visibles, recogidas };
+}
+
+/* =========================
+   COLISIONES
+   ========================= */
 function detectarColisiones(){
+  if (nivelCompletado) return;
+
   const radioColision = 0.18;
   document.querySelectorAll('.moneda, .enemigo').forEach(obj=>{
-    if(!obj.getAttribute('visible')) return;
+    if(obj.getAttribute('visible') === false) return;
+
     const pos = obj.getAttribute('position');
     const dx = pos.x - robotX;
     const dz = pos.z - robotZ;
     const dist = Math.sqrt(dx*dx + dz*dz);
+
     if(dist < radioColision){
       if(obj.classList.contains('moneda')) {
         puntos += 10;
         sonidoMoneda();
-        monedasRecogidas++;
       } else if(obj.classList.contains('enemigo')) {
         puntos -= 5;
         sonidoEnemigo();
@@ -176,14 +205,21 @@ function detectarColisiones(){
       $puntos.textContent = puntos;
       obj.setAttribute('visible', false);
 
-      // 🎯 ¿Ya recogió TODAS las monedas?
-      if (monedasRecogidas >= monedasTotales) {
-        pasarNivel();
+      // Actualizar contador y comprobar si todas fueron recogidas
+      const estado = actualizarContadorMonedas();
+      console.log(`Monedas: ${estado.recogidas}/${estado.total}`);
+
+      if (estado.recogidas >= estado.total && !nivelCompletado) {
+        nivelCompletado = true;
+        setTimeout(pasarNivel, 300);
       }
     }
   });
 }
 
+/* =========================
+   GENERADORES
+   ========================= */
 function posAleatoria(){
   const x = (Math.random()*0.7 - 0.35).toFixed(2);
   const z = (Math.random()*0.7 - 0.35).toFixed(2);
@@ -202,6 +238,7 @@ function crearMoneda(){
   el.setAttribute('rotation','90 0 0');
   el.setAttribute('position', posAleatoria());
   el.setAttribute('animation','property: rotation; to: 90 360 0; loop: true; dur: 2500');
+  el.setAttribute('visible', 'true');
   return el;
 }
 
@@ -214,17 +251,20 @@ function crearEnemigo(){
   el.setAttribute('color','#8B0000');
   el.setAttribute('position', posAleatoria());
   el.setAttribute('animation','property: position; dir: alternate; loop: true; dur: 800');
+  el.setAttribute('visible', 'true');
   return el;
 }
 
+/* =========================
+   CARGAR NIVEL
+   ========================= */
 function cargarNivel(){
   document.getElementById('contenedorMonedas').innerHTML = '';
   document.getElementById('contenedorEnemigos').innerHTML = '';
 
-  monedasTotales = MONEDAS_N[nivel];
-  monedasRecogidas = 0;
+  nivelCompletado = false;
 
-  for(let i=0; i<monedasTotales; i++)
+  for(let i=0; i<MONEDAS_N[nivel]; i++)
     document.getElementById('contenedorMonedas').appendChild(crearMoneda());
   for(let i=0; i<ENEMIGOS_N[nivel]; i++)
     document.getElementById('contenedorEnemigos').appendChild(crearEnemigo());
@@ -235,37 +275,45 @@ function cargarNivel(){
   tiempo = TIEMPOS[nivel];
   $tiempo.textContent = tiempo;
   $nivel.textContent = nivel;
+
+  setTimeout(actualizarContadorMonedas, 100);
 }
 
-/* 🎉 Pasar de nivel */
+/* =========================
+   PASAR DE NIVEL
+   ========================= */
 function pasarNivel() {
   clearInterval(intervaloTiempo);
+  partidaActiva = false;
 
   if (nivel < MAX_NIVEL) {
-    mostrarMensaje(`🎉 ¡Nivel ${nivel} completado!`, `Pasando al nivel ${nivel + 1}...`);
+    mostrarMensaje(`🎉 ¡Nivel ${nivel} completado!`, `Preparando nivel ${nivel + 1}...`);
     setTimeout(() => {
       nivel++;
+      partidaActiva = true;
       cargarNivel();
       iniciarTemporizador();
-    }, 2000);
+    }, 2200);
   } else {
-    partidaActiva = false;
     sonidoVictoria();
-
     if (puntos > record) {
       record = puntos;
       localStorage.setItem('arQuestRecord', record);
       $record.textContent = record;
     }
-
     document.getElementById('puntosFinales').textContent = 'Puntos: ' + puntos;
     document.getElementById('recordFinal').textContent = 'Récord: ' + record;
     document.getElementById('victoria').style.display = 'block';
   }
 }
 
-/* 📢 Mensaje flotante */
+/* =========================
+   MENSAJE FLOTANTE
+   ========================= */
 function mostrarMensaje(titulo, subtitulo = '') {
+  const anterior = document.getElementById('mensajeNivel');
+  if (anterior) anterior.remove();
+
   const msg = document.createElement('div');
   msg.id = 'mensajeNivel';
   msg.innerHTML = `
@@ -281,12 +329,11 @@ function mostrarMensaje(titulo, subtitulo = '') {
     pointer-events: none;
   `;
   document.body.appendChild(msg);
-  setTimeout(() => {
-    const el = document.getElementById('mensajeNivel');
-    if (el) el.remove();
-  }, 1800);
 }
 
+/* =========================
+   TEMPORIZADOR
+   ========================= */
 function iniciarTemporizador(){
   clearInterval(intervaloTiempo);
   intervaloTiempo = setInterval(()=>{
@@ -295,15 +342,20 @@ function iniciarTemporizador(){
     $tiempo.textContent = tiempo;
     if(tiempo<=0){
       clearInterval(intervaloTiempo);
-      // Si se acaba el tiempo → pierde nivel (no avanza)
-      mostrarMensaje(`⏰ ¡Se acabó el tiempo!`, `Reinicia para intentarlo de nuevo`);
-      partidaActiva = false;
+      if (!nivelCompletado) {
+        partidaActiva = false;
+        mostrarMensaje(`⏰ ¡Se acabó el tiempo!`, `Pulsa Reiniciar para intentar de nuevo`);
+      }
     }
   }, 1000);
 }
 
+/* =========================
+   REINICIAR
+   ========================= */
 function reiniciarJuego(){
-  puntos = 0; nivel = 1; partidaActiva = true;
+  clearInterval(intervaloTiempo);
+  puntos = 0; nivel = 1; partidaActiva = true; nivelCompletado = false;
   $puntos.textContent = puntos;
   document.getElementById('victoria').style.display = 'none';
   const msgViejo = document.getElementById('mensajeNivel');
@@ -312,6 +364,9 @@ function reiniciarJuego(){
   iniciarTemporizador();
 }
 
+/* =========================
+   INICIO
+   ========================= */
 window.addEventListener('load', () => {
   cargarNivel();
   iniciarTemporizador();
