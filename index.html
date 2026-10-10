@@ -4,52 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
   <title>AR Quest 2.0</title>
-
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
-
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-      width: 100vw; height: 100vh;
-      position: fixed; top: 0; left: 0;
-    }
-    #panel {
-      position: fixed; top: 10px; left: 10px;
-      z-index: 999999; background: rgba(0,0,0,0.85);
-      color: white; padding: 10px 14px; border-radius: 10px;
-      font-size: 15px; min-width: 130px; font-family: Arial, sans-serif;
-    }
-    #panel div { margin: 3px 0; }
-    #reiniciar {
-      margin-top: 6px; padding: 6px 10px; border: none;
-      border-radius: 6px; cursor: pointer; width: 100%;
-      background: #ff6b6b; color: white; font-weight: bold; font-size: 13px;
-    }
-    #nivelInfo {
-      position: fixed; top: 10px; right: 10px;
-      z-index: 999999; background: rgba(0,0,0,0.85);
-      color: #FFD700; padding: 10px 14px; border-radius: 10px;
-      font-size: 15px; font-weight: bold; font-family: Arial, sans-serif;
-    }
-    #victoria {
-      display: none; position: fixed; inset: 0;
-      z-index: 9999999; background: rgba(0,0,0,0.92);
-      color: white; text-align: center; padding-top: 22vh;
-      font-family: Arial, sans-serif;
-    }
-    #victoria h1 { font-size: 40px; color: #FFD700; margin: 10px; }
-    #victoria p  { font-size: 20px; margin: 6px; }
-    #victoria button {
-      margin-top: 22px; padding: 14px 26px; font-size: 17px;
-      border: none; border-radius: 10px; cursor: pointer;
-      background: #51cf66; color: white; font-weight: bold;
-    }
-    .a-enter-vr { display: none !important; }
-    a-scene { width: 100vw !important; height: 100vh !important; }
+    html, body { margin:0; padding:0; font-family:Arial,sans-serif; overflow:hidden;
+                 width:100vw; height:100vh; position:fixed; top:0; left:0; }
+    #panel { position:fixed; top:10px; left:10px; z-index:999999;
+             background:rgba(0,0,0,0.85); color:white; padding:10px 14px;
+             border-radius:10px; font-size:15px; min-width:130px; }
+    #panel div { margin:3px 0; }
+    #reiniciar { margin-top:6px; padding:6px 10px; border:none; border-radius:6px;
+                 cursor:pointer; width:100%; background:#ff6b6b; color:white;
+                 font-weight:bold; font-size:13px; }
+    #nivelInfo { position:fixed; top:10px; right:10px; z-index:999999;
+                 background:rgba(0,0,0,0.85); color:#FFD700; padding:10px 14px;
+                 border-radius:10px; font-size:15px; font-weight:bold; }
+    #victoria { display:none; position:fixed; inset:0; z-index:9999999;
+                background:rgba(0,0,0,0.92); color:white; text-align:center;
+                padding-top:22vh; }
+    #victoria h1 { font-size:40px; color:#FFD700; margin:10px; }
+    #victoria p  { font-size:20px; margin:6px; }
+    #victoria button { margin-top:22px; padding:14px 26px; font-size:17px;
+                       border:none; border-radius:10px; cursor:pointer;
+                       background:#51cf66; color:white; font-weight:bold; }
+    .a-enter-vr { display:none !important; }
+    a-scene { width:100vw !important; height:100vh !important; }
   </style>
 </head>
 
@@ -75,22 +55,21 @@
     vr-mode-ui="enabled: false"
     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
     renderer="logarithmicDepthBuffer: true; antialias: true;"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;">
+    style="position:fixed; top:0; left:0; width:100vw; height:100vh;">
 
     <a-marker preset="hiro" id="marcador">
 
-      <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
+      <a-circle position="0 0.005 0" rotation="-90 0 0" radius="0.45"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
-      <!-- 🤖 ROBOT SIN GIRO AUTOMÁTICO -->
       <a-entity
         id="robot"
         gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
         position="0 0 0"
-        scale="0.3 0.3 0.3"
+        scale="0.15 0.15 0.15"
         rotation="0 0 0">
-        <a-cone position="0 0.5 -0.6" radius-bottom="0.15" radius-top="0"
-                height="0.3" color="#FFD700" rotation="90 0 0"></a-cone>
+        <a-cone position="0 0.9 -1.2" radius-bottom="0.25" radius-top="0"
+                height="0.5" color="#FFD700" rotation="90 0 0"></a-cone>
       </a-entity>
 
       <a-entity id="contenedorMonedas"></a-entity>
@@ -102,23 +81,16 @@
 
   </a-scene>
 
-  <!-- 🎮 D-PAD ACTUALIZADO -->
   <div id="controles" style="
-    position: fixed !important;
-    bottom: 20px !important;
-    right: 15px !important;
-    z-index: 2147483647 !important;
-    display: grid !important;
-    grid-template-columns: 62px 62px 62px;
-    grid-template-rows: 62px 62px 62px;
-    gap: 6px;
-    pointer-events: auto !important;
-  ">
-    <button onclick="mover('arriba')"    style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬆️</button>
-    <button onclick="mover('izquierda')" style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬅️</button>
-    <button onclick="girar('izq')"       style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">🔄</button>
-    <button onclick="mover('derecha')"   style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">➡️</button>
-    <button onclick="mover('abajo')"     style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬇️</button>
+    position:fixed !important; bottom:20px !important; right:15px !important;
+    z-index:2147483647 !important; display:grid !important;
+    grid-template-columns:62px 62px 62px; grid-template-rows:62px 62px 62px;
+    gap:6px; pointer-events:auto !important;">
+    <button onclick="mover('arriba')"    style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">⬆️</button>
+    <button onclick="mover('izquierda')" style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">⬅️</button>
+    <button onclick="girar('izq')"       style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation; -webkit-user-select:none;">🔄</button>
+    <button onclick="mover('derecha')"   style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">➡️</button>
+    <button onclick="mover('abajo')"     style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">⬇️</button>
   </div>
 
 <script>
@@ -134,9 +106,9 @@ const ENEMIGOS_N = { 1: 2,  2: 4,  3: 6 };
 
 let robotX = 0, robotZ = 0;
 let robotRot = 0;
-const robotVel = 0.08;
-const robotGiro = 20;      // grados por pulsación del botón central
-const LIMITE_MARCADOR = 0.9;
+const robotVel = 0.04;
+const robotGiro = 20;
+const LIMITE_MARCADOR = 0.35;
 
 const $puntos = document.getElementById('puntos');
 const $tiempo = document.getElementById('tiempo');
@@ -146,134 +118,119 @@ const $victoria = document.getElementById('victoria');
 $record.textContent = record;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function sonar(freq = 800, dur = 0.12, tipo = 'sine') {
+function sonar(freq=800, dur=0.12, tipo='sine'){
   const o = audioCtx.createOscillator();
   const g = audioCtx.createGain();
   o.type = tipo; o.frequency.value = freq;
   o.connect(g); g.connect(audioCtx.destination);
   g.gain.setValueAtTime(0.15, audioCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-  o.start(); o.stop(audioCtx.currentTime + dur);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+dur);
+  o.start(); o.stop(audioCtx.currentTime+dur);
 }
-const sMoneda  = () => sonar(1200, 0.15, 'square');
-const sEnemigo = () => sonar(180, 0.35, 'sawtooth');
-const sVictoria = () => [523,659,784,1046].forEach((f,i) =>
-  setTimeout(() => sonar(f, 0.25, 'triangle'), i*180));
+const sMoneda = () => sonar(1200,0.15,'square');
+const sEnemigo = () => sonar(180,0.35,'sawtooth');
+const sVictoria = () => [523,659,784,1046].forEach((f,i)=>
+  setTimeout(()=>sonar(f,0.25,'triangle'), i*180));
 
-function actualizarRobot() {
+function actualizarRobot(){
   const robot = document.getElementById('robot');
-  if (!robot) return;
+  if(!robot) return;
   robot.setAttribute('position', `${robotX.toFixed(2)} 0 ${robotZ.toFixed(2)}`);
   robot.setAttribute('rotation', `0 ${robotRot} 0`);
 }
 
-/* 🕹️ Movimiento directo en pantalla */
-function mover(dir) {
-  if (!partidaActiva) return;
-
-  if (dir === 'arriba')    robotZ -= robotVel;
-  if (dir === 'abajo')     robotZ += robotVel;
-  if (dir === 'izquierda') robotX -= robotVel;
-  if (dir === 'derecha')   robotX += robotVel;
-
-  // 🎯 No salirse del marcador
+function mover(dir){
+  if(!partidaActiva) return;
+  if(dir==='arriba')    robotZ -= robotVel;
+  if(dir==='abajo')     robotZ += robotVel;
+  if(dir==='izquierda') robotX -= robotVel;
+  if(dir==='derecha')   robotX += robotVel;
   robotX = Math.max(-LIMITE_MARCADOR, Math.min(LIMITE_MARCADOR, robotX));
   robotZ = Math.max(-LIMITE_MARCADOR, Math.min(LIMITE_MARCADOR, robotZ));
-
   actualizarRobot();
   detectarColisiones();
 }
 
-/* 🔄 Girar sobre su eje */
-function girar(sentido) {
-  if (!partidaActiva) return;
-  robotRot += (sentido === 'izq' ? -robotGiro : robotGiro);
+function girar(sentido){
+  if(!partidaActiva) return;
+  robotRot += (sentido==='izq' ? -robotGiro : robotGiro);
   actualizarRobot();
 }
 
-function accion() { if (partidaActiva) sonar(600, 0.1, 'square'); }
-
-function detectarColisiones() {
-  const radioColision = 0.35;
-  document.querySelectorAll('.moneda, .enemigo').forEach(obj => {
-    if (!obj.getAttribute('visible')) return;
-
+function detectarColisiones(){
+  const radioColision = 0.18;
+  document.querySelectorAll('.moneda, .enemigo').forEach(obj=>{
+    if(!obj.getAttribute('visible')) return;
     const pos = obj.getAttribute('position');
     const dx = pos.x - robotX;
     const dz = pos.z - robotZ;
     const dist = Math.sqrt(dx*dx + dz*dz);
-
-    if (dist < radioColision) {
-      if (obj.classList.contains('moneda'))      { puntos += 10; sMoneda();  }
-      else if (obj.classList.contains('enemigo')){ puntos -= 5;  sEnemigo(); }
-      if (puntos < 0) puntos = 0;
+    if(dist < radioColision){
+      if(obj.classList.contains('moneda'))       { puntos += 10; sMoneda();  }
+      else if(obj.classList.contains('enemigo')) { puntos -= 5;  sEnemigo(); }
+      if(puntos<0) puntos=0;
       $puntos.textContent = puntos;
       obj.setAttribute('visible', false);
     }
   });
 }
 
-function posAleatoria() {
-  const x = (Math.random() * 1.6 - 0.8).toFixed(2);
-  const z = (Math.random() * 1.6 - 0.8).toFixed(2);
-  const y = (0.4 + Math.random() * 0.5).toFixed(2);
+function posAleatoria(){
+  const x = (Math.random()*0.7 - 0.35).toFixed(2);
+  const z = (Math.random()*0.7 - 0.35).toFixed(2);
+  const y = (0.08 + Math.random()*0.06).toFixed(2);
   return `${x} ${y} ${z}`;
 }
 
-function crearMoneda() {
-  const colores = ['#FFD700', '#00FFFF', '#FF69B4', '#51cf66'];
-  const c = colores[Math.floor(Math.random() * colores.length)];
+function crearMoneda(){
+  const colores = ['#FFD700','#00FFFF','#FF69B4','#51cf66'];
+  const c = colores[Math.floor(Math.random()*colores.length)];
   const el = document.createElement('a-cylinder');
-  el.setAttribute('class', 'moneda');
-  el.setAttribute('radius', '0.18');
-  el.setAttribute('height', '0.07');
+  el.setAttribute('class','moneda');
+  el.setAttribute('radius','0.05');
+  el.setAttribute('height','0.02');
   el.setAttribute('color', c);
-  el.setAttribute('rotation', '90 0 0');
+  el.setAttribute('rotation','90 0 0');
   el.setAttribute('position', posAleatoria());
-  el.setAttribute('animation', 'property: rotation; to: 90 360 0; loop: true; dur: 2500');
+  el.setAttribute('animation','property: rotation; to: 90 360 0; loop: true; dur: 2500');
   return el;
 }
 
-function crearEnemigo() {
+function crearEnemigo(){
   const el = document.createElement('a-cone');
-  el.setAttribute('class', 'enemigo');
-  el.setAttribute('radius-bottom', '0.2');
-  el.setAttribute('radius-top', '0');
-  el.setAttribute('height', '0.45');
-  el.setAttribute('color', '#8B0000');
+  el.setAttribute('class','enemigo');
+  el.setAttribute('radius-bottom','0.06');
+  el.setAttribute('radius-top','0');
+  el.setAttribute('height','0.12');
+  el.setAttribute('color','#8B0000');
   el.setAttribute('position', posAleatoria());
-  el.setAttribute('animation', 'property: position; dir: alternate; loop: true; dur: 800');
+  el.setAttribute('animation','property: position; dir: alternate; loop: true; dur: 800');
   return el;
 }
 
-function cargarNivel() {
+function cargarNivel(){
   document.getElementById('contenedorMonedas').innerHTML = '';
   document.getElementById('contenedorEnemigos').innerHTML = '';
-
-  for (let i = 0; i < MONEDAS_N[nivel]; i++)
+  for(let i=0; i<MONEDAS_N[nivel]; i++)
     document.getElementById('contenedorMonedas').appendChild(crearMoneda());
-
-  for (let i = 0; i < ENEMIGOS_N[nivel]; i++)
+  for(let i=0; i<ENEMIGOS_N[nivel]; i++)
     document.getElementById('contenedorEnemigos').appendChild(crearEnemigo());
-
   robotX = 0; robotZ = 0; robotRot = 0;
   actualizarRobot();
-
   tiempo = TIEMPOS[nivel];
   $tiempo.textContent = tiempo;
   $nivel.textContent = nivel;
 }
 
-function iniciarTemporizador() {
+function iniciarTemporizador(){
   clearInterval(intervaloTiempo);
-  intervaloTiempo = setInterval(() => {
-    if (!partidaActiva) return;
+  intervaloTiempo = setInterval(()=>{
+    if(!partidaActiva) return;
     tiempo--;
     $tiempo.textContent = tiempo;
-
-    if (tiempo <= 0) {
+    if(tiempo<=0){
       clearInterval(intervaloTiempo);
-      if (nivel < MAX_NIVEL) {
+      if(nivel < MAX_NIVEL){
         nivel++;
         alert(`¡Pasaste al nivel ${nivel}!`);
         cargarNivel();
@@ -281,7 +238,7 @@ function iniciarTemporizador() {
       } else {
         partidaActiva = false;
         sVictoria();
-        if (puntos > record) {
+        if(puntos > record){
           record = puntos;
           localStorage.setItem('arQuestRecord', record);
           $record.textContent = record;
@@ -294,7 +251,7 @@ function iniciarTemporizador() {
   }, 1000);
 }
 
-function reiniciarJuego() {
+function reiniciarJuego(){
   puntos = 0; nivel = 1; partidaActiva = true;
   $puntos.textContent = puntos;
   $victoria.style.display = 'none';
