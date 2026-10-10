@@ -10,14 +10,25 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
 
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; overflow: hidden; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      width: 100%; height: 100%;
+    }
+
+    /* Forzar que TODO el canvas de A-Frame quede detrás */
+    .a-canvas, canvas.a-canvas {
+      z-index: 1 !important;
+    }
 
     /* Panel de puntuación */
     #panel {
-      position: fixed; top: 10px; left: 10px; z-index: 10;
-      background: rgba(0,0,0,0.8); color: white;
-      padding: 10px 14px; border-radius: 10px; font-size: 15px;
-      min-width: 130px;
+      position: fixed; top: 10px; left: 10px;
+      z-index: 99999 !important;
+      background: rgba(0,0,0,0.85); color: white;
+      padding: 10px 14px; border-radius: 10px;
+      font-size: 15px; min-width: 130px;
     }
     #panel div { margin: 3px 0; }
     #reiniciar {
@@ -29,47 +40,57 @@
 
     /* Info del nivel */
     #nivelInfo {
-      position: fixed; top: 10px; right: 10px; z-index: 10;
-      background: rgba(0,0,0,0.8); color: #FFD700;
+      position: fixed; top: 10px; right: 10px;
+      z-index: 99999 !important;
+      background: rgba(0,0,0,0.85); color: #FFD700;
       padding: 10px 14px; border-radius: 10px;
       font-size: 15px; font-weight: bold;
     }
 
-    /* 🎮 CONTROLES DEL ROBOT (D-PAD) */
+    /* 🎮 D-PAD ROBOT */
     #controles {
-      position: fixed;
-      bottom: 20px;
-      right: 15px;
-      z-index: 9999;
-      display: grid;
-      grid-template-columns: 60px 60px 60px;
-      grid-template-rows: 60px 60px 60px;
-      gap: 6px;
-      opacity: 0.85;
+      position: fixed !important;
+      bottom: 25px !important;
+      right: 15px !important;
+      z-index: 999999 !important;
+      display: grid !important;
+      grid-template-columns: 65px 65px 65px;
+      grid-template-rows: 65px 65px 65px;
+      gap: 8px;
+      opacity: 0.9;
+      pointer-events: auto !important;
     }
     #controles button {
-      width: 60px; height: 60px;
-      border: none; border-radius: 12px;
-      background: rgba(255,255,255,0.85);
-      color: #222; font-size: 26px; font-weight: bold;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-      user-select: none; touch-action: manipulation;
+      width: 65px; height: 65px;
+      border: 2px solid white;
+      border-radius: 14px;
+      background: rgba(30,30,30,0.9);
+      color: white; font-size: 28px; font-weight: bold;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
       cursor: pointer;
+      padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999999 !important;
+      pointer-events: auto !important;
     }
     #controles button:active {
       background: #FFD700;
-      transform: scale(0.92);
+      color: #000;
+      transform: scale(0.9);
     }
-    /* Posiciones del grid */
     #arriba     { grid-column: 2; grid-row: 1; }
     #izquierda  { grid-column: 1; grid-row: 2; }
-    #centro     { grid-column: 2; grid-row: 2; background: rgba(255,215,0,0.9) !important; font-size: 18px !important; }
+    #centro     { grid-column: 2; grid-row: 2; background: rgba(255,215,0,0.95) !important; color: black !important; font-size: 20px !important; }
     #derecha    { grid-column: 3; grid-row: 2; }
     #abajo      { grid-column: 2; grid-row: 3; }
 
-    /* Pantalla de victoria */
+    /* Victoria */
     #victoria {
-      display: none; position: fixed; inset: 0; z-index: 100;
+      display: none; position: fixed; inset: 0;
+      z-index: 9999999 !important;
       background: rgba(0,0,0,0.92); color: white;
       text-align: center; padding-top: 22vh;
     }
@@ -97,13 +118,13 @@
 
   <div id="nivelInfo">Nivel <span id="nivel">1</span> / 3</div>
 
-  <!-- 🎮 D-PAD para mover al robot -->
+  <!-- 🎮 CONTROLES -->
   <div id="controles">
-    <button id="arriba"    ontouchstart="mover('arriba')"    onmousedown="mover('arriba')">⬆️</button>
-    <button id="izquierda" ontouchstart="girar('izq')"       onmousedown="girar('izq')">⬅️</button>
-    <button id="centro"    ontouchstart="accion()"           onmousedown="accion()">🎯</button>
-    <button id="derecha"   ontouchstart="girar('der')"       onmousedown="girar('der')">➡️</button>
-    <button id="abajo"     ontouchstart="mover('abajo')"     onmousedown="mover('abajo')">⬇️</button>
+    <button id="arriba"    ontouchstart="event.preventDefault(); mover('arriba')" onmousedown="mover('arriba')">⬆️</button>
+    <button id="izquierda" ontouchstart="event.preventDefault(); girar('izq')"    onmousedown="girar('izq')">⬅️</button>
+    <button id="centro"    ontouchstart="event.preventDefault(); accion()"       onmousedown="accion()">🎯</button>
+    <button id="derecha"   ontouchstart="event.preventDefault(); girar('der')"   onmousedown="girar('der')">➡️</button>
+    <button id="abajo"     ontouchstart="event.preventDefault(); mover('abajo')" onmousedown="mover('abajo')">⬇️</button>
   </div>
 
   <!-- Victoria -->
@@ -125,20 +146,18 @@
       <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
-      <!-- 🤖 ROBOT con posición controlada -->
+      <!-- 🤖 ROBOT (más pequeño para que quepa bien) -->
       <a-entity
         id="robot"
         gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
         position="0 0 0"
-        scale="0.5 0.5 0.5"
+        scale="0.3 0.3 0.3"
         rotation="0 0 0"
         animation__idle="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear;">
-        <!-- Indicador de dirección (pequeño cono delante) -->
-        <a-cone position="0 0.3 -0.4" radius-bottom="0.08" radius-top="0"
-                height="0.15" color="#FFD700" rotation="90 0 0"></a-cone>
+        <a-cone position="0 0.5 -0.6" radius-bottom="0.15" radius-top="0"
+                height="0.3" color="#FFD700" rotation="90 0 0"></a-cone>
       </a-entity>
 
-      <!-- Contenedores de objetos -->
       <a-entity id="contenedorMonedas"></a-entity>
       <a-entity id="contenedorEnemigos"></a-entity>
 
@@ -161,13 +180,11 @@ const TIEMPOS    = { 1: 90, 2: 60, 3: 40 };
 const MONEDAS_N  = { 1: 5,  2: 6,  3: 8 };
 const ENEMIGOS_N = { 1: 2,  2: 4,  3: 6 };
 
-/* Posición y rotación del robot */
 let robotX = 0, robotZ = 0;
-let robotRot = 0;      // grados
-let robotVel = 0.08;   // velocidad de movimiento
-let robotGiro = 15;    // grados por toque
+let robotRot = 0;
+let robotVel = 0.08;
+let robotGiro = 15;
 
-/* DOM */
 const $puntos = document.getElementById('puntos');
 const $tiempo = document.getElementById('tiempo');
 const $record = document.getElementById('record');
@@ -176,7 +193,7 @@ const $victoria = document.getElementById('victoria');
 $record.textContent = record;
 
 /* =========================
-   SONIDOS (Web Audio API)
+   SONIDOS
    ========================= */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function sonar(freq = 800, dur = 0.12, tipo = 'sine') {
@@ -194,7 +211,7 @@ const sVictoria = () => [523,659,784,1046].forEach((f,i) =>
   setTimeout(() => sonar(f, 0.25, 'triangle'), i*180));
 
 /* =========================
-   CONTROL DEL ROBOT
+   CONTROL ROBOT
    ========================= */
 function actualizarRobot() {
   const robot = document.getElementById('robot');
@@ -205,15 +222,12 @@ function actualizarRobot() {
 function mover(dir) {
   if (!partidaActiva) return;
   const rad = (robotRot * Math.PI) / 180;
-
-  // Dirección del movimiento basado en la rotación del robot
   const dx = Math.sin(rad) * robotVel;
   const dz = Math.cos(rad) * robotVel;
 
   if (dir === 'arriba') { robotX -= dx; robotZ -= dz; }
   if (dir === 'abajo')  { robotX += dx; robotZ += dz; }
 
-  // Límites del marcador
   robotX = Math.max(-1.2, Math.min(1.2, robotX));
   robotZ = Math.max(-1.2, Math.min(1.2, robotZ));
 
@@ -229,19 +243,15 @@ function girar(sentido) {
 }
 
 function accion() {
-  // Botón central: acción especial (ataque, poder, etc.)
   if (!partidaActiva) return;
   sonar(600, 0.1, 'square');
 }
 
 /* =========================
-   COLISIONES (robot vs objetos)
+   COLISIONES
    ========================= */
 function detectarColisiones() {
-  const radioColision = 0.25;
-  const robot = document.getElementById('robot');
-  if (!robot) return;
-
+  const radioColision = 0.35;
   document.querySelectorAll('.moneda, .enemigo').forEach(obj => {
     if (!obj.getAttribute('visible')) return;
 
@@ -266,7 +276,7 @@ function detectarColisiones() {
 }
 
 /* =========================
-   GENERADORES DE OBJETOS
+   GENERADORES
    ========================= */
 function posAleatoria() {
   const x = (Math.random() * 2.0 - 1.0).toFixed(2);
@@ -314,7 +324,6 @@ function cargarNivel() {
   for (let i = 0; i < ENEMIGOS_N[nivel]; i++)
     document.getElementById('contenedorEnemigos').appendChild(crearEnemigo());
 
-  // Reiniciar posición del robot
   robotX = 0; robotZ = 0; robotRot = 0;
   actualizarRobot();
 
