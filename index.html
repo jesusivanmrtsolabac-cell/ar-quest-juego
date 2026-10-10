@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AR Quest 2.0 - Juego 3D</title>
+
+  <!-- Motor 3D -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- Realidad Aumentada -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
+  <!-- Componente para modelos GLB -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
+
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; overflow: hidden; }
+
+    #panel {
+      position: fixed; top: 10px; left: 10px; z-index: 10;
+      background: rgba(0,0,0,0.8); color: white;
+      padding: 12px 16px; border-radius: 10px; font-size: 16px;
+      min-width: 150px;
+    }
+    #panel div { margin: 3px 0; }
+    #reiniciar {
+      margin-top: 8px; padding: 8px 12px; border: none;
+      border-radius: 6px; cursor: pointer; width: 100%;
+      background: #ff6b6b; color: white; font-weight: bold;
+    }
+
+    #nivelInfo {
+      position: fixed; top: 10px; right: 10px; z-index: 10;
+      background: rgba(0,0,0,0.8); color: #FFD700;
+      padding: 12px 16px; border-radius: 10px;
+      font-size: 16px; font-weight: bold;
+    }
+
+    /* Pantalla de victoria */
+    #victoria {
+      display: none;
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.9); color: white;
+      text-align: center; padding-top: 25vh;
+      font-family: Arial, sans-serif;
+    }
+    #victoria h1 { font-size: 42px; color: #FFD700; margin: 10px; }
+    #victoria p  { font-size: 22px; margin: 8px; }
+    #victoria button {
+      margin-top: 25px; padding: 14px 28px; font-size: 18px;
+      border: none; border-radius: 10px; cursor: pointer;
+      background: #51cf66; color: white; font-weight: bold;
+    }
+
+    /* Indicador de mirada */
+    .a-enter-vr { display: none !important; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Panel de puntuación -->
+  <div id="panel">
+    <div>Puntos: <span id="puntos">0</span></div>
+    <div>Tiempo: <span id="tiempo">90</span> s</div>
+    <div>Récord: <span id="record">0</span></div>
+    <button id="reiniciar">🔄 Reiniciar</button>
+  </div>
+
+  <!-- Info del nivel -->
+  <div id="nivelInfo">
+    Nivel <span id="nivel">1</span> / 3
+  </div>
+
+  <!-- Pantalla de victoria -->
+  <div id="victoria">
+    <h1>🏆 ¡VICTORIA! 🏆</h1>
+    <p id="puntosFinales">Puntos: 0</p>
+    <p id="recordFinal">Récord: 0</p>
+    <button onclick="reiniciarJuego()">Jugar de nuevo</button>
+  </div>
+
+  <a-scene embedded
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    sound="src: url(https://cdn.jsdelivr.net/gh/mdn/webaudio-examples@main/audio-analyser/viper.mp3); on: click; volume: 0.4;">
+
+    <a-marker preset="hiro" id="marcador">
+
+      <!-- 🟫 Piso de referencia -->
+      <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
+                color="#1e3d2f" opacity="0.7"></a-circle>
+
+      <!-- 🐵 ROBOT 3D descargado de catálogo público (KhronosGroup glTF-Sample-Models) -->
+      <a-entity
+        id="robot"
+        gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
+        position="0 0 0"
+        scale="0.6 0.6 0.6"
+        rotation="0 0 0"
+        animation__idle="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear;">
+      </a-entity>
+
+      <!-- MONEDAS 3D (se generan por JS) -->
+      <a-entity id="contenedorMonedas"></a-entity>
+
+      <!-- ENEMIGOS 3D (se generan por JS) -->
+      <a-entity id="contenedorEnemigos"></a-entity>
+
+    </a-marker>
+
+    <!-- Cámara con cursor -->
+    <a-entity camera>
+      <a-cursor raycaster="objects: .clickable" fuse="false" color="yellow"></a-cursor>
+    </a-entity>
+  </a-scene>
+
+<script>
+/* =========================
+   VARIABLES DEL JUEGO
+   ========================= */
+let puntos     = 0;
+let tiempo     = 90;
+let nivel      = 1;
+let partidaActiva = true;
+let intervaloTiempo = null;
+let record     = parseInt(localStorage.getItem('arQuestRecord')) || 0;
+
+const MAX_NIVEL = 3;
+const TIEMPOS_POR_NIVEL = { 1: 90, 2: 60, 3: 40 }; // Nivel 1 más fácil
+const MONEDAS_POR_NIVEL = { 1: 5, 2: 6, 3: 8 };
+const ENEMIGOS_POR_NIVEL = { 1: 2, 2: 4, 3: 6 };
+
+/* Referencias DOM */
+const $puntos   = document.getElementById('puntos');
+const $tiempo   = document.getElementById('tiempo');
+const $record   = document.getElementById('record');
+const $nivel    = document.getElementById('nivel');
+const $victoria = document.getElementById('victoria');
+$record.textContent = record;
+
+/* Sonidos generados con Web Audio API */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function tocarSonido(frecuencia = 800, duracion = 0.12, tipo = 'sine') {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = tipo;
+  osc.frequency.value = frecuencia;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracion);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duracion);
+}
+const sonidoMoneda   = () => tocarSonido(1200, 0.15, 'square');
+const sonidoEnemigo  = () => tocarSonido(180, 0.35, 'sawtooth');
+const sonidoVictoria = () => {
+  [523, 659, 784, 1046].forEach((f, i) =>
+    setTimeout(() => tocarSonido(f, 0.25, 'triangle'), i * 180));
+};
+
+/* =========================
+   GENERADORES
+   ========================= */
+function posicionAleatoria() {
+  const x = (Math.random() * 1.6 - 0.8).toFixed(2);
+  const z = (Math.random() * 1.6 - 0.8).toFixed(2);
+  const y = (0.6 + Math.random() * 0.4).toFixed(2);
+  return `${x} ${y} ${z}`;
+}
+
+function crearMoneda() {
+  const colores = ['#FFD700', '#00FFFF', '#FF69B4', '#51cf66'];
+  const color = colores[Math.floor(Math.random() * colores.length)];
+
+  // Rotación de 90 en X para que parezca moneda
+  const el = document.createElement('a-cylinder');
+  el.setAttribute('class', 'clickable moneda');
+  el.setAttribute('radius', '0.18');
+  el.setAttribute('height', '0.07');
+  el.setAttribute('color', color);
+  el.setAttribute('rotation', '90 0 0');
+  el.setAttribute('position', posicionAleatoria());
+  el.setAttribute('animation', 'property: rotation; to: 90 360 0; loop: true; dur: 2500');
+  el.setAttribute('cursor-listener', '');
+  return el;
+}
+
+function crearEnemigo() {
+  const el = document.createElement('a-cone');
+  el.setAttribute('class', 'clickable enemigo');
+  el.setAttribute('radius-bottom', '0.2');
+  el.setAttribute('radius-top', '0');
+  el.setAttribute('height', '0.45');
+  el.setAttribute('color', '#8B0000');
+  el.setAttribute('position', posicionAleatoria());
+  el.setAttribute('animation', 'property: position; dir: alternate; loop: true; dur: 800; to: 0 1 0');
+  el.setAttribute('cursor-listener', '');
+  return el;
+}
+
+/* =========================
+   CONFIGURAR NIVEL
+   ========================= */
+function cargarNivel() {
+  const contMonedas = document.getElementById('contenedorMonedas');
+  const contEnemigos = document.getElementById('contenedorEnemigos');
+
+  // Limpiar
+  contMonedas.innerHTML  = '';
+  contEnemigos.innerHTML = '';
+
+  // Generar objetos nuevos
+  for (let i = 0; i < MONEDAS_POR_NIVEL[nivel]; i++) {
+    contMonedas.appendChild(crearMoneda());
+  }
+  for (let i = 0; i < ENEMIGOS_POR_NIVEL[nivel]; i++) {
+    contEnemigos.appendChild(crearEnemigo());
+  }
+
+  tiempo = TIEMPOS_POR_NIVEL[nivel];
+  $tiempo.textContent = tiempo;
+  $nivel.textContent  = nivel;
+}
+
+/* =========================
+   COMPONENTE DE CLICK
+   ========================= */
+AFRAME.registerComponent('cursor-listener', {
+  init: function () {
+    this.el.addEventListener('click', () => {
+      if (!partidaActiva) return;
+      if (!this.el.getAttribute('visible')) return;
+
+      if (this.el.classList.contains('moneda')) {
+        puntos += 10;
+        sonidoMoneda();
+      } else if (this.el.classList.contains('enemigo')) {
+        puntos -= 5;
+        sonidoEnemigo();
+      }
+      if (puntos < 0) puntos = 0;
+
+      $puntos.textContent = puntos;
+
+      // Ocultar el objeto recolectado / destruido
+      this.el.setAttribute('visible', false);
+    });
+  }
+});
+
+/* =========================
+   TEMPORIZADOR
+   ========================= */
+function iniciarTemporizador() {
+  clearInterval(intervaloTiempo);
+  intervaloTiempo = setInterval(() => {
+    if (!partidaActiva) return;
+    tiempo--;
+    $tiempo.textContent = tiempo;
+
+    if (tiempo <= 0) {
+      clearInterval(intervaloTiempo);
+
+      if (nivel < MAX_NIVEL) {
+        nivel++;
+        alert(`¡Pasaste al nivel ${nivel}!`);
+        cargarNivel();
+        iniciarTemporizador();
+      } else {
+        // Victoria final
+        partidaActiva = false;
+        sonidoVictoria();
+
+        if (puntos > record) {
+          record = puntos;
+          localStorage.setItem('arQuestRecord', record);
+          $record.textContent = record;
+        }
+
+        document.getElementById('puntosFinales').textContent = 'Puntos: ' + puntos;
+        document.getElementById('recordFinal').textContent = 'Récord: ' + record;
+        $victoria.style.display = 'block';
+      }
+    }
+  }, 1000);
+}
+
+/* =========================
+   REINICIAR
+   ========================= */
+function reiniciarJuego() {
+  puntos = 0;
+  nivel = 1;
+  partidaActiva = true;
+  $puntos.textContent = puntos;
+  $victoria.style.display = 'none';
+
+  cargarNivel();
+  iniciarTemporizador();
+}
+
+/* =========================
+   INICIO
+   ========================= */
+window.addEventListener('load', () => {
+  cargarNivel();
+  iniciarTemporizador();
+
+  document.getElementById('reiniciar').addEventListener('click', reiniciarJuego);
+});
+</script>
+
+</body>
+</html>
