@@ -3,56 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR Quest 2.0 - Juego 3D</title>
+  <title>AR Quest 2.0 - Robot Móvil</title>
 
-  <!-- Motor 3D -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <!-- Realidad Aumentada -->
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
-  <!-- Cargador de modelos GLB -->
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
 
   <style>
     body { margin: 0; font-family: Arial, sans-serif; overflow: hidden; }
 
+    /* Panel de puntuación */
     #panel {
       position: fixed; top: 10px; left: 10px; z-index: 10;
       background: rgba(0,0,0,0.8); color: white;
-      padding: 12px 16px; border-radius: 10px; font-size: 16px;
-      min-width: 150px;
+      padding: 10px 14px; border-radius: 10px; font-size: 15px;
+      min-width: 130px;
     }
     #panel div { margin: 3px 0; }
     #reiniciar {
-      margin-top: 8px; padding: 8px 12px; border: none;
+      margin-top: 6px; padding: 6px 10px; border: none;
       border-radius: 6px; cursor: pointer; width: 100%;
       background: #ff6b6b; color: white; font-weight: bold;
+      font-size: 13px;
     }
 
+    /* Info del nivel */
     #nivelInfo {
       position: fixed; top: 10px; right: 10px; z-index: 10;
       background: rgba(0,0,0,0.8); color: #FFD700;
-      padding: 12px 16px; border-radius: 10px;
-      font-size: 16px; font-weight: bold;
+      padding: 10px 14px; border-radius: 10px;
+      font-size: 15px; font-weight: bold;
     }
 
-    #ayuda {
-      position: fixed; bottom: 10px; left: 0; right: 0;
-      text-align: center; z-index: 10;
-      color: white; font-size: 14px;
-      text-shadow: 0 0 6px black;
+    /* 🎮 CONTROLES DEL ROBOT (D-PAD) */
+    #controles {
+      position: fixed;
+      bottom: 20px;
+      right: 15px;
+      z-index: 9999;
+      display: grid;
+      grid-template-columns: 60px 60px 60px;
+      grid-template-rows: 60px 60px 60px;
+      gap: 6px;
+      opacity: 0.85;
     }
+    #controles button {
+      width: 60px; height: 60px;
+      border: none; border-radius: 12px;
+      background: rgba(255,255,255,0.85);
+      color: #222; font-size: 26px; font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+      user-select: none; touch-action: manipulation;
+      cursor: pointer;
+    }
+    #controles button:active {
+      background: #FFD700;
+      transform: scale(0.92);
+    }
+    /* Posiciones del grid */
+    #arriba     { grid-column: 2; grid-row: 1; }
+    #izquierda  { grid-column: 1; grid-row: 2; }
+    #centro     { grid-column: 2; grid-row: 2; background: rgba(255,215,0,0.9) !important; font-size: 18px !important; }
+    #derecha    { grid-column: 3; grid-row: 2; }
+    #abajo      { grid-column: 2; grid-row: 3; }
 
+    /* Pantalla de victoria */
     #victoria {
-      display: none;
-      position: fixed; inset: 0; z-index: 100;
+      display: none; position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,0.92); color: white;
       text-align: center; padding-top: 22vh;
-      font-family: Arial, sans-serif;
     }
-    #victoria h1 { font-size: 42px; color: #FFD700; margin: 10px; }
-    #victoria p  { font-size: 22px; margin: 8px; }
+    #victoria h1 { font-size: 40px; color: #FFD700; margin: 10px; }
+    #victoria p  { font-size: 20px; margin: 6px; }
     #victoria button {
-      margin-top: 25px; padding: 14px 28px; font-size: 18px;
+      margin-top: 22px; padding: 14px 26px; font-size: 17px;
       border: none; border-radius: 10px; cursor: pointer;
       background: #51cf66; color: white; font-weight: bold;
     }
@@ -63,7 +87,7 @@
 
 <body>
 
-  <!-- Panel de puntuación -->
+  <!-- Panel -->
   <div id="panel">
     <div>Puntos: <span id="puntos">0</span></div>
     <div>Tiempo: <span id="tiempo">90</span> s</div>
@@ -71,13 +95,18 @@
     <button id="reiniciar">🔄 Reiniciar</button>
   </div>
 
-  <!-- Info del nivel -->
   <div id="nivelInfo">Nivel <span id="nivel">1</span> / 3</div>
 
-  <!-- Instrucción -->
-  <div id="ayuda">👆 Toca las monedas 🪙 (evita los conos rojos 🔺)</div>
+  <!-- 🎮 D-PAD para mover al robot -->
+  <div id="controles">
+    <button id="arriba"    ontouchstart="mover('arriba')"    onmousedown="mover('arriba')">⬆️</button>
+    <button id="izquierda" ontouchstart="girar('izq')"       onmousedown="girar('izq')">⬅️</button>
+    <button id="centro"    ontouchstart="accion()"           onmousedown="accion()">🎯</button>
+    <button id="derecha"   ontouchstart="girar('der')"       onmousedown="girar('der')">➡️</button>
+    <button id="abajo"     ontouchstart="mover('abajo')"     onmousedown="mover('abajo')">⬇️</button>
+  </div>
 
-  <!-- Pantalla de victoria -->
+  <!-- Victoria -->
   <div id="victoria">
     <h1>🏆 ¡VICTORIA! 🏆</h1>
     <p id="puntosFinales">Puntos: 0</p>
@@ -92,51 +121,57 @@
 
     <a-marker preset="hiro" id="marcador">
 
-      <!-- 🟫 Piso de referencia -->
+      <!-- Piso -->
       <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
-      <!-- 🤖 Robot 3D descargado de catálogo público -->
+      <!-- 🤖 ROBOT con posición controlada -->
       <a-entity
         id="robot"
         gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
         position="0 0 0"
-        scale="0.6 0.6 0.6"
+        scale="0.5 0.5 0.5"
         rotation="0 0 0"
         animation__idle="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear;">
+        <!-- Indicador de dirección (pequeño cono delante) -->
+        <a-cone position="0 0.3 -0.4" radius-bottom="0.08" radius-top="0"
+                height="0.15" color="#FFD700" rotation="90 0 0"></a-cone>
       </a-entity>
 
-      <!-- Monedas y enemigos se generan por JS -->
+      <!-- Contenedores de objetos -->
       <a-entity id="contenedorMonedas"></a-entity>
       <a-entity id="contenedorEnemigos"></a-entity>
 
     </a-marker>
 
-    <!-- Cámara SIN cursor fijo (usamos toques en pantalla) -->
     <a-entity camera></a-entity>
   </a-scene>
 
 <script>
 /* =========================
-   VARIABLES DEL JUEGO
+   VARIABLES
    ========================= */
-let puntos          = 0;
-let tiempo          = 90;
-let nivel           = 1;
-let partidaActiva   = true;
+let puntos = 0, tiempo = 90, nivel = 1;
+let partidaActiva = true;
 let intervaloTiempo = null;
-let record          = parseInt(localStorage.getItem('arQuestRecord')) || 0;
+let record = parseInt(localStorage.getItem('arQuestRecord')) || 0;
 
-const MAX_NIVEL         = 3;
-const TIEMPOS_POR_NIVEL = { 1: 90, 2: 60, 3: 40 };
-const MONEDAS_POR_NIVEL = { 1: 5,  2: 6,  3: 8  };
-const ENEMIGOS_POR_NIVEL= { 1: 2,  2: 4,  3: 6  };
+const MAX_NIVEL = 3;
+const TIEMPOS    = { 1: 90, 2: 60, 3: 40 };
+const MONEDAS_N  = { 1: 5,  2: 6,  3: 8 };
+const ENEMIGOS_N = { 1: 2,  2: 4,  3: 6 };
 
-/* Referencias DOM */
-const $puntos   = document.getElementById('puntos');
-const $tiempo   = document.getElementById('tiempo');
-const $record   = document.getElementById('record');
-const $nivel    = document.getElementById('nivel');
+/* Posición y rotación del robot */
+let robotX = 0, robotZ = 0;
+let robotRot = 0;      // grados
+let robotVel = 0.08;   // velocidad de movimiento
+let robotGiro = 15;    // grados por toque
+
+/* DOM */
+const $puntos = document.getElementById('puntos');
+const $tiempo = document.getElementById('tiempo');
+const $record = document.getElementById('record');
+const $nivel  = document.getElementById('nivel');
 const $victoria = document.getElementById('victoria');
 $record.textContent = record;
 
@@ -144,61 +179,125 @@ $record.textContent = record;
    SONIDOS (Web Audio API)
    ========================= */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function tocarSonido(frecuencia = 800, duracion = 0.12, tipo = 'sine') {
-  const osc  = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = tipo;
-  osc.frequency.value = frecuencia;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracion);
-  osc.start();
-  osc.stop(audioCtx.currentTime + duracion);
+function sonar(freq = 800, dur = 0.12, tipo = 'sine') {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = tipo; o.frequency.value = freq;
+  o.connect(g); g.connect(audioCtx.destination);
+  g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  o.start(); o.stop(audioCtx.currentTime + dur);
 }
-const sonidoMoneda   = () => tocarSonido(1200, 0.15, 'square');
-const sonidoEnemigo  = () => tocarSonido(180,  0.35, 'sawtooth');
-const sonidoVictoria = () => {
-  [523, 659, 784, 1046].forEach((f, i) =>
-    setTimeout(() => tocarSonido(f, 0.25, 'triangle'), i * 180));
-};
+const sMoneda  = () => sonar(1200, 0.15, 'square');
+const sEnemigo = () => sonar(180, 0.35, 'sawtooth');
+const sVictoria = () => [523,659,784,1046].forEach((f,i) =>
+  setTimeout(() => sonar(f, 0.25, 'triangle'), i*180));
 
 /* =========================
-   GENERADORES
+   CONTROL DEL ROBOT
    ========================= */
-function posicionAleatoria() {
-  const x = (Math.random() * 1.6 - 0.8).toFixed(2);
-  const z = (Math.random() * 1.6 - 0.8).toFixed(2);
-  const y = (0.6 + Math.random() * 0.4).toFixed(2);
+function actualizarRobot() {
+  const robot = document.getElementById('robot');
+  robot.setAttribute('position', `${robotX.toFixed(2)} 0 ${robotZ.toFixed(2)}`);
+  robot.setAttribute('rotation', `0 ${robotRot} 0`);
+}
+
+function mover(dir) {
+  if (!partidaActiva) return;
+  const rad = (robotRot * Math.PI) / 180;
+
+  // Dirección del movimiento basado en la rotación del robot
+  const dx = Math.sin(rad) * robotVel;
+  const dz = Math.cos(rad) * robotVel;
+
+  if (dir === 'arriba') { robotX -= dx; robotZ -= dz; }
+  if (dir === 'abajo')  { robotX += dx; robotZ += dz; }
+
+  // Límites del marcador
+  robotX = Math.max(-1.2, Math.min(1.2, robotX));
+  robotZ = Math.max(-1.2, Math.min(1.2, robotZ));
+
+  actualizarRobot();
+  detectarColisiones();
+}
+
+function girar(sentido) {
+  if (!partidaActiva) return;
+  robotRot += (sentido === 'izq' ? -robotGiro : robotGiro);
+  actualizarRobot();
+  detectarColisiones();
+}
+
+function accion() {
+  // Botón central: acción especial (ataque, poder, etc.)
+  if (!partidaActiva) return;
+  sonar(600, 0.1, 'square');
+}
+
+/* =========================
+   COLISIONES (robot vs objetos)
+   ========================= */
+function detectarColisiones() {
+  const radioColision = 0.25;
+  const robot = document.getElementById('robot');
+  if (!robot) return;
+
+  document.querySelectorAll('.moneda, .enemigo').forEach(obj => {
+    if (!obj.getAttribute('visible')) return;
+
+    const pos = obj.getAttribute('position');
+    const dx = pos.x - robotX;
+    const dz = pos.z - robotZ;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+
+    if (dist < radioColision) {
+      if (obj.classList.contains('moneda')) {
+        puntos += 10;
+        sMoneda();
+      } else if (obj.classList.contains('enemigo')) {
+        puntos -= 5;
+        sEnemigo();
+      }
+      if (puntos < 0) puntos = 0;
+      $puntos.textContent = puntos;
+      obj.setAttribute('visible', false);
+    }
+  });
+}
+
+/* =========================
+   GENERADORES DE OBJETOS
+   ========================= */
+function posAleatoria() {
+  const x = (Math.random() * 2.0 - 1.0).toFixed(2);
+  const z = (Math.random() * 2.0 - 1.0).toFixed(2);
+  const y = (0.4 + Math.random() * 0.5).toFixed(2);
   return `${x} ${y} ${z}`;
 }
 
 function crearMoneda() {
   const colores = ['#FFD700', '#00FFFF', '#FF69B4', '#51cf66'];
-  const color = colores[Math.floor(Math.random() * colores.length)];
-
+  const c = colores[Math.floor(Math.random() * colores.length)];
   const el = document.createElement('a-cylinder');
-  el.setAttribute('class', 'clickable moneda');
+  el.setAttribute('class', 'moneda');
   el.setAttribute('radius', '0.18');
   el.setAttribute('height', '0.07');
-  el.setAttribute('color', color);
+  el.setAttribute('color', c);
   el.setAttribute('rotation', '90 0 0');
-  el.setAttribute('position', posicionAleatoria());
+  el.setAttribute('position', posAleatoria());
   el.setAttribute('animation', 'property: rotation; to: 90 360 0; loop: true; dur: 2500');
-  el.setAttribute('cursor-listener', '');
   return el;
 }
 
 function crearEnemigo() {
   const el = document.createElement('a-cone');
-  el.setAttribute('class', 'clickable enemigo');
+  el.setAttribute('class', 'enemigo');
   el.setAttribute('radius-bottom', '0.2');
   el.setAttribute('radius-top', '0');
   el.setAttribute('height', '0.45');
   el.setAttribute('color', '#8B0000');
-  el.setAttribute('position', posicionAleatoria());
-  el.setAttribute('animation', 'property: position; dir: alternate; loop: true; dur: 800; to: 0 1 0');
-  el.setAttribute('cursor-listener', '');
+  el.setAttribute('position', posAleatoria());
+  el.setAttribute('animation', 'property: position; dir: alternate; loop: true; dur: 800');
   return el;
 }
 
@@ -206,95 +305,23 @@ function crearEnemigo() {
    CARGAR NIVEL
    ========================= */
 function cargarNivel() {
-  const contMonedas  = document.getElementById('contenedorMonedas');
-  const contEnemigos = document.getElementById('contenedorEnemigos');
+  document.getElementById('contenedorMonedas').innerHTML = '';
+  document.getElementById('contenedorEnemigos').innerHTML = '';
 
-  contMonedas.innerHTML  = '';
-  contEnemigos.innerHTML = '';
+  for (let i = 0; i < MONEDAS_N[nivel]; i++)
+    document.getElementById('contenedorMonedas').appendChild(crearMoneda());
 
-  for (let i = 0; i < MONEDAS_POR_NIVEL[nivel]; i++) {
-    contMonedas.appendChild(crearMoneda());
-  }
-  for (let i = 0; i < ENEMIGOS_POR_NIVEL[nivel]; i++) {
-    contEnemigos.appendChild(crearEnemigo());
-  }
+  for (let i = 0; i < ENEMIGOS_N[nivel]; i++)
+    document.getElementById('contenedorEnemigos').appendChild(crearEnemigo());
 
-  tiempo = TIEMPOS_POR_NIVEL[nivel];
+  // Reiniciar posición del robot
+  robotX = 0; robotZ = 0; robotRot = 0;
+  actualizarRobot();
+
+  tiempo = TIEMPOS[nivel];
   $tiempo.textContent = tiempo;
-  $nivel.textContent  = nivel;
+  $nivel.textContent = nivel;
 }
-
-/* =========================
-   COMPONENTE DE CLICK
-   ========================= */
-AFRAME.registerComponent('cursor-listener', {
-  init: function () {
-    this.el.addEventListener('click', () => {
-      if (!partidaActiva) return;
-      if (this.el.getAttribute('visible') === false) return;
-
-      if (this.el.classList.contains('moneda')) {
-        puntos += 10;
-        sonidoMoneda();
-      } else if (this.el.classList.contains('enemigo')) {
-        puntos -= 5;
-        sonidoEnemigo();
-      }
-      if (puntos < 0) puntos = 0;
-
-      $puntos.textContent = puntos;
-      this.el.setAttribute('visible', false);
-    });
-  }
-});
-
-/* =========================
-   DETECCIÓN DE TOQUES EN PANTALLA
-   ========================= */
-window.addEventListener('load', () => {
-  const scene = document.querySelector('a-scene');
-
-  function manejarToque(clientX, clientY) {
-    if (!partidaActiva) return;
-
-    const camera = document.querySelector('[camera]').object3D;
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const rect = scene.canvas.getBoundingClientRect();
-    mouse.x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
-    mouse.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    const clickables = [];
-    document.querySelectorAll('.clickable').forEach(el => {
-      if (el.getAttribute('visible') !== false && el.object3D) {
-        clickables.push(el.object3D);
-      }
-    });
-
-    const intersecciones = raycaster.intersectObjects(clickables, true);
-
-    if (intersecciones.length > 0) {
-      let obj = intersecciones[0].object;
-      while (obj && !obj.el) obj = obj.parent;
-      if (obj && obj.el) obj.el.emit('click');
-    }
-  }
-
-  // Toques en móvil
-  scene.canvas.addEventListener('touchstart', (e) => {
-    if (e.touches.length > 0) {
-      manejarToque(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  }, { passive: true });
-
-  // Clics en escritorio
-  scene.canvas.addEventListener('click', (e) => {
-    manejarToque(e.clientX, e.clientY);
-  });
-});
 
 /* =========================
    TEMPORIZADOR
@@ -308,7 +335,6 @@ function iniciarTemporizador() {
 
     if (tiempo <= 0) {
       clearInterval(intervaloTiempo);
-
       if (nivel < MAX_NIVEL) {
         nivel++;
         alert(`¡Pasaste al nivel ${nivel}!`);
@@ -316,16 +342,14 @@ function iniciarTemporizador() {
         iniciarTemporizador();
       } else {
         partidaActiva = false;
-        sonidoVictoria();
-
+        sVictoria();
         if (puntos > record) {
           record = puntos;
           localStorage.setItem('arQuestRecord', record);
           $record.textContent = record;
         }
-
         document.getElementById('puntosFinales').textContent = 'Puntos: ' + puntos;
-        document.getElementById('recordFinal').textContent   = 'Récord: ' + record;
+        document.getElementById('recordFinal').textContent = 'Récord: ' + record;
         $victoria.style.display = 'block';
       }
     }
@@ -336,12 +360,9 @@ function iniciarTemporizador() {
    REINICIAR
    ========================= */
 function reiniciarJuego() {
-  puntos = 0;
-  nivel  = 1;
-  partidaActiva = true;
+  puntos = 0; nivel = 1; partidaActiva = true;
   $puntos.textContent = puntos;
   $victoria.style.display = 'none';
-
   cargarNivel();
   iniciarTemporizador();
 }
@@ -352,7 +373,6 @@ function reiniciarJuego() {
 window.addEventListener('load', () => {
   cargarNivel();
   iniciarTemporizador();
-
   document.getElementById('reiniciar').addEventListener('click', reiniciarJuego);
 });
 </script>
