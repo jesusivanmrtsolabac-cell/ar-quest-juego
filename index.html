@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
   <title>AR Quest 2.0 - Robot Móvil</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -14,21 +14,19 @@
       margin: 0; padding: 0;
       font-family: Arial, sans-serif;
       overflow: hidden;
-      width: 100%; height: 100%;
+      width: 100vw; height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
     }
 
-    /* Forzar que TODO el canvas de A-Frame quede detrás */
-    .a-canvas, canvas.a-canvas {
-      z-index: 1 !important;
-    }
-
-    /* Panel de puntuación */
+    /* Panel de puntuación - dentro de la escena, va flotando */
     #panel {
       position: fixed; top: 10px; left: 10px;
-      z-index: 99999 !important;
+      z-index: 999999;
       background: rgba(0,0,0,0.85); color: white;
       padding: 10px 14px; border-radius: 10px;
       font-size: 15px; min-width: 130px;
+      font-family: Arial, sans-serif;
     }
     #panel div { margin: 3px 0; }
     #reiniciar {
@@ -38,61 +36,21 @@
       font-size: 13px;
     }
 
-    /* Info del nivel */
     #nivelInfo {
       position: fixed; top: 10px; right: 10px;
-      z-index: 99999 !important;
+      z-index: 999999;
       background: rgba(0,0,0,0.85); color: #FFD700;
       padding: 10px 14px; border-radius: 10px;
       font-size: 15px; font-weight: bold;
+      font-family: Arial, sans-serif;
     }
 
-    /* 🎮 D-PAD ROBOT */
-    #controles {
-      position: fixed !important;
-      bottom: 25px !important;
-      right: 15px !important;
-      z-index: 999999 !important;
-      display: grid !important;
-      grid-template-columns: 65px 65px 65px;
-      grid-template-rows: 65px 65px 65px;
-      gap: 8px;
-      opacity: 0.9;
-      pointer-events: auto !important;
-    }
-    #controles button {
-      width: 65px; height: 65px;
-      border: 2px solid white;
-      border-radius: 14px;
-      background: rgba(30,30,30,0.9);
-      color: white; font-size: 28px; font-weight: bold;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.6);
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-      cursor: pointer;
-      padding: 0;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 999999 !important;
-      pointer-events: auto !important;
-    }
-    #controles button:active {
-      background: #FFD700;
-      color: #000;
-      transform: scale(0.9);
-    }
-    #arriba     { grid-column: 2; grid-row: 1; }
-    #izquierda  { grid-column: 1; grid-row: 2; }
-    #centro     { grid-column: 2; grid-row: 2; background: rgba(255,215,0,0.95) !important; color: black !important; font-size: 20px !important; }
-    #derecha    { grid-column: 3; grid-row: 2; }
-    #abajo      { grid-column: 2; grid-row: 3; }
-
-    /* Victoria */
     #victoria {
       display: none; position: fixed; inset: 0;
-      z-index: 9999999 !important;
+      z-index: 9999999;
       background: rgba(0,0,0,0.92); color: white;
       text-align: center; padding-top: 22vh;
+      font-family: Arial, sans-serif;
     }
     #victoria h1 { font-size: 40px; color: #FFD700; margin: 10px; }
     #victoria p  { font-size: 20px; margin: 6px; }
@@ -103,6 +61,7 @@
     }
 
     .a-enter-vr { display: none !important; }
+    a-scene { width: 100vw !important; height: 100vh !important; }
   </style>
 </head>
 
@@ -118,15 +77,6 @@
 
   <div id="nivelInfo">Nivel <span id="nivel">1</span> / 3</div>
 
-  <!-- 🎮 CONTROLES -->
-  <div id="controles">
-    <button id="arriba"    ontouchstart="event.preventDefault(); mover('arriba')" onmousedown="mover('arriba')">⬆️</button>
-    <button id="izquierda" ontouchstart="event.preventDefault(); girar('izq')"    onmousedown="girar('izq')">⬅️</button>
-    <button id="centro"    ontouchstart="event.preventDefault(); accion()"       onmousedown="accion()">🎯</button>
-    <button id="derecha"   ontouchstart="event.preventDefault(); girar('der')"   onmousedown="girar('der')">➡️</button>
-    <button id="abajo"     ontouchstart="event.preventDefault(); mover('abajo')" onmousedown="mover('abajo')">⬇️</button>
-  </div>
-
   <!-- Victoria -->
   <div id="victoria">
     <h1>🏆 ¡VICTORIA! 🏆</h1>
@@ -138,15 +88,15 @@
   <a-scene embedded
     vr-mode-ui="enabled: false"
     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-    renderer="logarithmicDepthBuffer: true; antialias: true;">
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;">
 
     <a-marker preset="hiro" id="marcador">
 
-      <!-- Piso -->
       <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
-      <!-- 🤖 ROBOT (más pequeño para que quepa bien) -->
+      <!-- 🤖 ROBOT -->
       <a-entity
         id="robot"
         gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
@@ -164,12 +114,36 @@
     </a-marker>
 
     <a-entity camera></a-entity>
+
+    <!-- 🎮 CONTROLES FLOTANTES DENTRO DE LA ESCENA (esto sí funciona en móvil) -->
+    <a-entity id="controles-3d" position="0 0 -2">
+      <!-- Fondo semitransparente del D-Pad -->
+      <a-plane position="0 0 0" width="1.2" height="1.2" color="#000" opacity="0.5" rotation="0 0 0"></a-plane>
+    </a-entity>
+
   </a-scene>
 
+  <!-- 🎮 CONTROLES HTML (fuera de la escena) -->
+  <div id="controles" style="
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 15px !important;
+    z-index: 2147483647 !important;
+    display: grid !important;
+    grid-template-columns: 62px 62px 62px;
+    grid-template-rows: 62px 62px 62px;
+    gap: 6px;
+    pointer-events: auto !important;
+    transform: translateZ(9999px);
+  ">
+    <button onclick="mover('arriba')" style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬆️</button>
+    <button onclick="girar('izq')"    style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬅️</button>
+    <button onclick="accion()"        style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">🎯</button>
+    <button onclick="girar('der')"    style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">➡️</button>
+    <button onclick="mover('abajo')"  style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none; user-select:none;">⬇️</button>
+  </div>
+
 <script>
-/* =========================
-   VARIABLES
-   ========================= */
 let puntos = 0, tiempo = 90, nivel = 1;
 let partidaActiva = true;
 let intervaloTiempo = null;
@@ -192,9 +166,6 @@ const $nivel  = document.getElementById('nivel');
 const $victoria = document.getElementById('victoria');
 $record.textContent = record;
 
-/* =========================
-   SONIDOS
-   ========================= */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function sonar(freq = 800, dur = 0.12, tipo = 'sine') {
   const o = audioCtx.createOscillator();
@@ -210,11 +181,9 @@ const sEnemigo = () => sonar(180, 0.35, 'sawtooth');
 const sVictoria = () => [523,659,784,1046].forEach((f,i) =>
   setTimeout(() => sonar(f, 0.25, 'triangle'), i*180));
 
-/* =========================
-   CONTROL ROBOT
-   ========================= */
 function actualizarRobot() {
   const robot = document.getElementById('robot');
+  if (!robot) return;
   robot.setAttribute('position', `${robotX.toFixed(2)} 0 ${robotZ.toFixed(2)}`);
   robot.setAttribute('rotation', `0 ${robotRot} 0`);
 }
@@ -247,9 +216,6 @@ function accion() {
   sonar(600, 0.1, 'square');
 }
 
-/* =========================
-   COLISIONES
-   ========================= */
 function detectarColisiones() {
   const radioColision = 0.35;
   document.querySelectorAll('.moneda, .enemigo').forEach(obj => {
@@ -262,11 +228,9 @@ function detectarColisiones() {
 
     if (dist < radioColision) {
       if (obj.classList.contains('moneda')) {
-        puntos += 10;
-        sMoneda();
+        puntos += 10; sMoneda();
       } else if (obj.classList.contains('enemigo')) {
-        puntos -= 5;
-        sEnemigo();
+        puntos -= 5; sEnemigo();
       }
       if (puntos < 0) puntos = 0;
       $puntos.textContent = puntos;
@@ -275,9 +239,6 @@ function detectarColisiones() {
   });
 }
 
-/* =========================
-   GENERADORES
-   ========================= */
 function posAleatoria() {
   const x = (Math.random() * 2.0 - 1.0).toFixed(2);
   const z = (Math.random() * 2.0 - 1.0).toFixed(2);
@@ -311,9 +272,6 @@ function crearEnemigo() {
   return el;
 }
 
-/* =========================
-   CARGAR NIVEL
-   ========================= */
 function cargarNivel() {
   document.getElementById('contenedorMonedas').innerHTML = '';
   document.getElementById('contenedorEnemigos').innerHTML = '';
@@ -332,9 +290,6 @@ function cargarNivel() {
   $nivel.textContent = nivel;
 }
 
-/* =========================
-   TEMPORIZADOR
-   ========================= */
 function iniciarTemporizador() {
   clearInterval(intervaloTiempo);
   intervaloTiempo = setInterval(() => {
@@ -365,9 +320,6 @@ function iniciarTemporizador() {
   }, 1000);
 }
 
-/* =========================
-   REINICIAR
-   ========================= */
 function reiniciarJuego() {
   puntos = 0; nivel = 1; partidaActiva = true;
   $puntos.textContent = puntos;
@@ -376,9 +328,6 @@ function reiniciarJuego() {
   iniciarTemporizador();
 }
 
-/* =========================
-   INICIO
-   ========================= */
 window.addEventListener('load', () => {
   cargarNivel();
   iniciarTemporizador();
