@@ -9,7 +9,7 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <!-- Realidad Aumentada -->
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
-  <!-- Componente para modelos GLB -->
+  <!-- Cargador de modelos GLB -->
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
 
   <style>
@@ -35,12 +35,18 @@
       font-size: 16px; font-weight: bold;
     }
 
-    /* Pantalla de victoria */
+    #ayuda {
+      position: fixed; bottom: 10px; left: 0; right: 0;
+      text-align: center; z-index: 10;
+      color: white; font-size: 14px;
+      text-shadow: 0 0 6px black;
+    }
+
     #victoria {
       display: none;
       position: fixed; inset: 0; z-index: 100;
-      background: rgba(0,0,0,0.9); color: white;
-      text-align: center; padding-top: 25vh;
+      background: rgba(0,0,0,0.92); color: white;
+      text-align: center; padding-top: 22vh;
       font-family: Arial, sans-serif;
     }
     #victoria h1 { font-size: 42px; color: #FFD700; margin: 10px; }
@@ -51,7 +57,6 @@
       background: #51cf66; color: white; font-weight: bold;
     }
 
-    /* Indicador de mirada */
     .a-enter-vr { display: none !important; }
   </style>
 </head>
@@ -67,9 +72,10 @@
   </div>
 
   <!-- Info del nivel -->
-  <div id="nivelInfo">
-    Nivel <span id="nivel">1</span> / 3
-  </div>
+  <div id="nivelInfo">Nivel <span id="nivel">1</span> / 3</div>
+
+  <!-- Instrucción -->
+  <div id="ayuda">👆 Toca las monedas 🪙 (evita los conos rojos 🔺)</div>
 
   <!-- Pantalla de victoria -->
   <div id="victoria">
@@ -82,8 +88,7 @@
   <a-scene embedded
     vr-mode-ui="enabled: false"
     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-    renderer="logarithmicDepthBuffer: true; antialias: true;"
-    sound="src: url(https://cdn.jsdelivr.net/gh/mdn/webaudio-examples@main/audio-analyser/viper.mp3); on: click; volume: 0.4;">
+    renderer="logarithmicDepthBuffer: true; antialias: true;">
 
     <a-marker preset="hiro" id="marcador">
 
@@ -91,7 +96,7 @@
       <a-circle position="0 0.01 0" rotation="-90 0 0" radius="1.4"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
-      <!-- 🐵 ROBOT 3D descargado de catálogo público (KhronosGroup glTF-Sample-Models) -->
+      <!-- 🤖 Robot 3D descargado de catálogo público -->
       <a-entity
         id="robot"
         gltf-model="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/RiggedFigure/glTF-Binary/RiggedFigure.glb"
@@ -101,32 +106,31 @@
         animation__idle="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear;">
       </a-entity>
 
-      <!-- MONEDAS 3D (se generan por JS) -->
+      <!-- Monedas y enemigos se generan por JS -->
       <a-entity id="contenedorMonedas"></a-entity>
-
-      <!-- ENEMIGOS 3D (se generan por JS) -->
       <a-entity id="contenedorEnemigos"></a-entity>
 
     </a-marker>
 
-    <!-- Cámara SIN cursor fijo (usaremos toques en pantalla) -->
+    <!-- Cámara SIN cursor fijo (usamos toques en pantalla) -->
     <a-entity camera></a-entity>
+  </a-scene>
 
 <script>
 /* =========================
    VARIABLES DEL JUEGO
    ========================= */
-let puntos     = 0;
-let tiempo     = 90;
-let nivel      = 1;
-let partidaActiva = true;
+let puntos          = 0;
+let tiempo          = 90;
+let nivel           = 1;
+let partidaActiva   = true;
 let intervaloTiempo = null;
-let record     = parseInt(localStorage.getItem('arQuestRecord')) || 0;
+let record          = parseInt(localStorage.getItem('arQuestRecord')) || 0;
 
-const MAX_NIVEL = 3;
-const TIEMPOS_POR_NIVEL = { 1: 90, 2: 60, 3: 40 }; // Nivel 1 más fácil
-const MONEDAS_POR_NIVEL = { 1: 5, 2: 6, 3: 8 };
-const ENEMIGOS_POR_NIVEL = { 1: 2, 2: 4, 3: 6 };
+const MAX_NIVEL         = 3;
+const TIEMPOS_POR_NIVEL = { 1: 90, 2: 60, 3: 40 };
+const MONEDAS_POR_NIVEL = { 1: 5,  2: 6,  3: 8  };
+const ENEMIGOS_POR_NIVEL= { 1: 2,  2: 4,  3: 6  };
 
 /* Referencias DOM */
 const $puntos   = document.getElementById('puntos');
@@ -136,10 +140,12 @@ const $nivel    = document.getElementById('nivel');
 const $victoria = document.getElementById('victoria');
 $record.textContent = record;
 
-/* Sonidos generados con Web Audio API */
+/* =========================
+   SONIDOS (Web Audio API)
+   ========================= */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function tocarSonido(frecuencia = 800, duracion = 0.12, tipo = 'sine') {
-  const osc = audioCtx.createOscillator();
+  const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = tipo;
   osc.frequency.value = frecuencia;
@@ -151,7 +157,7 @@ function tocarSonido(frecuencia = 800, duracion = 0.12, tipo = 'sine') {
   osc.stop(audioCtx.currentTime + duracion);
 }
 const sonidoMoneda   = () => tocarSonido(1200, 0.15, 'square');
-const sonidoEnemigo  = () => tocarSonido(180, 0.35, 'sawtooth');
+const sonidoEnemigo  = () => tocarSonido(180,  0.35, 'sawtooth');
 const sonidoVictoria = () => {
   [523, 659, 784, 1046].forEach((f, i) =>
     setTimeout(() => tocarSonido(f, 0.25, 'triangle'), i * 180));
@@ -171,7 +177,6 @@ function crearMoneda() {
   const colores = ['#FFD700', '#00FFFF', '#FF69B4', '#51cf66'];
   const color = colores[Math.floor(Math.random() * colores.length)];
 
-  // Rotación de 90 en X para que parezca moneda
   const el = document.createElement('a-cylinder');
   el.setAttribute('class', 'clickable moneda');
   el.setAttribute('radius', '0.18');
@@ -198,17 +203,15 @@ function crearEnemigo() {
 }
 
 /* =========================
-   CONFIGURAR NIVEL
+   CARGAR NIVEL
    ========================= */
 function cargarNivel() {
-  const contMonedas = document.getElementById('contenedorMonedas');
+  const contMonedas  = document.getElementById('contenedorMonedas');
   const contEnemigos = document.getElementById('contenedorEnemigos');
 
-  // Limpiar
   contMonedas.innerHTML  = '';
   contEnemigos.innerHTML = '';
 
-  // Generar objetos nuevos
   for (let i = 0; i < MONEDAS_POR_NIVEL[nivel]; i++) {
     contMonedas.appendChild(crearMoneda());
   }
@@ -228,7 +231,7 @@ AFRAME.registerComponent('cursor-listener', {
   init: function () {
     this.el.addEventListener('click', () => {
       if (!partidaActiva) return;
-      if (!this.el.getAttribute('visible')) return;
+      if (this.el.getAttribute('visible') === false) return;
 
       if (this.el.classList.contains('moneda')) {
         puntos += 10;
@@ -240,11 +243,57 @@ AFRAME.registerComponent('cursor-listener', {
       if (puntos < 0) puntos = 0;
 
       $puntos.textContent = puntos;
-
-      // Ocultar el objeto recolectado / destruido
       this.el.setAttribute('visible', false);
     });
   }
+});
+
+/* =========================
+   DETECCIÓN DE TOQUES EN PANTALLA
+   ========================= */
+window.addEventListener('load', () => {
+  const scene = document.querySelector('a-scene');
+
+  function manejarToque(clientX, clientY) {
+    if (!partidaActiva) return;
+
+    const camera = document.querySelector('[camera]').object3D;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const rect = scene.canvas.getBoundingClientRect();
+    mouse.x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
+    mouse.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const clickables = [];
+    document.querySelectorAll('.clickable').forEach(el => {
+      if (el.getAttribute('visible') !== false && el.object3D) {
+        clickables.push(el.object3D);
+      }
+    });
+
+    const intersecciones = raycaster.intersectObjects(clickables, true);
+
+    if (intersecciones.length > 0) {
+      let obj = intersecciones[0].object;
+      while (obj && !obj.el) obj = obj.parent;
+      if (obj && obj.el) obj.el.emit('click');
+    }
+  }
+
+  // Toques en móvil
+  scene.canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 0) {
+      manejarToque(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  // Clics en escritorio
+  scene.canvas.addEventListener('click', (e) => {
+    manejarToque(e.clientX, e.clientY);
+  });
 });
 
 /* =========================
@@ -266,7 +315,6 @@ function iniciarTemporizador() {
         cargarNivel();
         iniciarTemporizador();
       } else {
-        // Victoria final
         partidaActiva = false;
         sonidoVictoria();
 
@@ -277,7 +325,7 @@ function iniciarTemporizador() {
         }
 
         document.getElementById('puntosFinales').textContent = 'Puntos: ' + puntos;
-        document.getElementById('recordFinal').textContent = 'Récord: ' + record;
+        document.getElementById('recordFinal').textContent   = 'Récord: ' + record;
         $victoria.style.display = 'block';
       }
     }
@@ -289,7 +337,7 @@ function iniciarTemporizador() {
    ========================= */
 function reiniciarJuego() {
   puntos = 0;
-  nivel = 1;
+  nivel  = 1;
   partidaActiva = true;
   $puntos.textContent = puntos;
   $victoria.style.display = 'none';
