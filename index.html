@@ -20,14 +20,22 @@
     #nivelInfo { position:fixed; top:10px; right:10px; z-index:999999;
                  background:rgba(0,0,0,0.85); color:#FFD700; padding:10px 14px;
                  border-radius:10px; font-size:15px; font-weight:bold; }
-    #victoria { display:none; position:fixed; inset:0; z-index:9999999;
-                background:rgba(0,0,0,0.92); color:white; text-align:center;
-                padding-top:22vh; }
-    #victoria h1 { font-size:40px; color:#FFD700; margin:10px; }
-    #victoria p  { font-size:20px; margin:6px; }
-    #victoria button { margin-top:22px; padding:14px 26px; font-size:17px;
+    #victoria { display:none; position:fixed; inset:0; z-index:2147483600;
+                background:rgba(0,0,0,0.95); color:white; text-align:center;
+                padding-top:22vh; font-family:Arial,sans-serif; }
+    #victoria h1 { font-size:42px; color:#FFD700; margin:10px; }
+    #victoria p  { font-size:22px; margin:8px; }
+    #victoria button { margin-top:25px; padding:14px 30px; font-size:18px;
                        border:none; border-radius:10px; cursor:pointer;
                        background:#51cf66; color:white; font-weight:bold; }
+    #mensajeNivel {
+      position:fixed; inset:0; z-index:2147483500;
+      background:rgba(0,0,0,0.9); color:white;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; font-family:Arial,sans-serif;
+      pointer-events:none;
+    }
     .a-enter-vr { display:none !important; }
     a-scene { width:100vw !important; height:100vh !important; }
   </style>
@@ -101,6 +109,9 @@ let intervaloTiempo = null;
 let record = parseInt(localStorage.getItem('arQuestRecord')) || 0;
 let nivelCompletado = false;
 
+/* 🐛 FIX 1: Guardar cuántas monedas hay en el nivel actual */
+let monedasDelNivel = 0;
+
 const MAX_NIVEL = 3;
 const TIEMPOS    = { 1: 90, 2: 60, 3: 40 };
 const MONEDAS_N  = { 1: 5,  2: 6,  3: 8 };
@@ -150,7 +161,7 @@ function actualizarRobot(){
 }
 
 function mover(dir){
-  if(!partidaActiva) return;
+  if(!partidaActiva || nivelCompletado) return;
   if(dir==='arriba')    robotZ -= robotVel;
   if(dir==='abajo')     robotZ += robotVel;
   if(dir==='izquierda') robotX -= robotVel;
@@ -162,20 +173,16 @@ function mover(dir){
 }
 
 function girar(sentido){
-  if(!partidaActiva) return;
+  if(!partidaActiva || nivelCompletado) return;
   robotRot += (sentido==='izq' ? -robotGiro : robotGiro);
   actualizarRobot();
 }
 
 /* =========================
-   ACTUALIZAR CONTADOR DE MONEDAS
+   🐛 FIX 2: Contador de monedas basado en variable del nivel
    ========================= */
-function actualizarContadorMonedas(){
-  const total = document.querySelectorAll('.moneda').length;
-  const visibles = document.querySelectorAll('.moneda[visible="true"], .moneda:not([visible])').length;
-  const recogidas = total - visibles;
-  $monedas.textContent = `${recogidas}/${total}`;
-  return { total, visibles, recogidas };
+function actualizarContadorMonedas(recogidas){
+  $monedas.textContent = `${recogidas}/${monedasDelNivel}`;
 }
 
 /* =========================
@@ -185,6 +192,15 @@ function detectarColisiones(){
   if (nivelCompletado) return;
 
   const radioColision = 0.18;
+  let monedasRecogidasAhora = 0;
+
+  // Contamos cuántas monedas siguen visibles
+  document.querySelectorAll('.moneda').forEach(m => {
+    if (m.getAttribute('visible') !== false) monedasRecogidasAhora++;
+  });
+  const recogidas = monedasDelNivel - monedasRecogidasAhora;
+
+  // Recorremos objetos para detectar colisiones nuevas
   document.querySelectorAll('.moneda, .enemigo').forEach(obj=>{
     if(obj.getAttribute('visible') === false) return;
 
@@ -205,14 +221,22 @@ function detectarColisiones(){
       $puntos.textContent = puntos;
       obj.setAttribute('visible', false);
 
-      // Actualizar contador y comprobar si todas fueron recogidas
-      const estado = actualizarContadorMonedas();
-      console.log(`Monedas: ${estado.recogidas}/${estado.total}`);
+      // Recalcular las monedas tras ocultar esta
+      setTimeout(() => {
+        let visibles = 0;
+        document.querySelectorAll('.moneda').forEach(m => {
+          if (m.getAttribute('visible') !== false) visibles++;
+        });
+        const rec = monedasDelNivel - visibles;
+        actualizarContadorMonedas(rec);
 
-      if (estado.recogidas >= estado.total && !nivelCompletado) {
-        nivelCompletado = true;
-        setTimeout(pasarNivel, 300);
-      }
+        // 🎯 ¿Ya recogió todas?
+        if (rec >= monedasDelNivel && !nivelCompletado) {
+          nivelCompletado = true;
+          partidaActiva = false;   // ← Detiene movimiento inmediatamente
+          setTimeout(pasarNivel, 400);
+        }
+      }, 50);
     }
   });
 }
@@ -263,8 +287,12 @@ function cargarNivel(){
   document.getElementById('contenedorEnemigos').innerHTML = '';
 
   nivelCompletado = false;
+  partidaActiva = true;
 
-  for(let i=0; i<MONEDAS_N[nivel]; i++)
+  // 🐛 FIX 1: Guardar el número correcto de monedas
+  monedasDelNivel = MONEDAS_N[nivel];
+
+  for(let i=0; i<monedasDelNivel; i++)
     document.getElementById('contenedorMonedas').appendChild(crearMoneda());
   for(let i=0; i<ENEMIGOS_N[nivel]; i++)
     document.getElementById('contenedorEnemigos').appendChild(crearEnemigo());
@@ -276,25 +304,28 @@ function cargarNivel(){
   $tiempo.textContent = tiempo;
   $nivel.textContent = nivel;
 
-  setTimeout(actualizarContadorMonedas, 100);
+  // Actualizar el contador con 0 recogidas
+  actualizarContadorMonedas(0);
 }
 
 /* =========================
-   PASAR DE NIVEL
+   🐛 FIX 3: PASAR DE NIVEL SIN SUPERPOSICIÓN
    ========================= */
 function pasarNivel() {
   clearInterval(intervaloTiempo);
-  partidaActiva = false;
 
   if (nivel < MAX_NIVEL) {
+    // Mostrar mensaje y esperar
     mostrarMensaje(`🎉 ¡Nivel ${nivel} completado!`, `Preparando nivel ${nivel + 1}...`);
     setTimeout(() => {
+      quitarMensaje();
       nivel++;
-      partidaActiva = true;
       cargarNivel();
       iniciarTemporizador();
     }, 2200);
   } else {
+    // Último nivel → victoria
+    quitarMensaje();
     sonidoVictoria();
     if (puntos > record) {
       record = puntos;
@@ -311,24 +342,19 @@ function pasarNivel() {
    MENSAJE FLOTANTE
    ========================= */
 function mostrarMensaje(titulo, subtitulo = '') {
-  const anterior = document.getElementById('mensajeNivel');
-  if (anterior) anterior.remove();
-
+  quitarMensaje();  // Asegurarse de que no hay otro
   const msg = document.createElement('div');
   msg.id = 'mensajeNivel';
   msg.innerHTML = `
     <div style="font-size:34px; color:#FFD700; font-weight:bold;">${titulo}</div>
     <div style="font-size:18px; margin-top:10px;">${subtitulo}</div>
   `;
-  msg.style.cssText = `
-    position: fixed; inset: 0; z-index: 2147483647;
-    background: rgba(0,0,0,0.85);
-    color: white; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center; font-family: Arial, sans-serif;
-    pointer-events: none;
-  `;
   document.body.appendChild(msg);
+}
+
+function quitarMensaje() {
+  const el = document.getElementById('mensajeNivel');
+  if (el) el.remove();
 }
 
 /* =========================
@@ -337,15 +363,13 @@ function mostrarMensaje(titulo, subtitulo = '') {
 function iniciarTemporizador(){
   clearInterval(intervaloTiempo);
   intervaloTiempo = setInterval(()=>{
-    if(!partidaActiva) return;
+    if(!partidaActiva || nivelCompletado) return;
     tiempo--;
     $tiempo.textContent = tiempo;
     if(tiempo<=0){
       clearInterval(intervaloTiempo);
-      if (!nivelCompletado) {
-        partidaActiva = false;
-        mostrarMensaje(`⏰ ¡Se acabó el tiempo!`, `Pulsa Reiniciar para intentar de nuevo`);
-      }
+      partidaActiva = false;
+      mostrarMensaje(`⏰ ¡Se acabó el tiempo!`, `Pulsa Reiniciar para intentar de nuevo`);
     }
   }, 1000);
 }
@@ -355,11 +379,12 @@ function iniciarTemporizador(){
    ========================= */
 function reiniciarJuego(){
   clearInterval(intervaloTiempo);
+  quitarMensaje();
+
   puntos = 0; nivel = 1; partidaActiva = true; nivelCompletado = false;
   $puntos.textContent = puntos;
   document.getElementById('victoria').style.display = 'none';
-  const msgViejo = document.getElementById('mensajeNivel');
-  if (msgViejo) msgViejo.remove();
+
   cargarNivel();
   iniciarTemporizador();
 }
