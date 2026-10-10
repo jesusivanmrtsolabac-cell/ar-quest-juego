@@ -58,7 +58,6 @@
     style="position:fixed; top:0; left:0; width:100vw; height:100vh;">
 
     <a-marker preset="hiro" id="marcador">
-
       <a-circle position="0 0.005 0" rotation="-90 0 0" radius="0.45"
                 color="#1e3d2f" opacity="0.7"></a-circle>
 
@@ -74,11 +73,9 @@
 
       <a-entity id="contenedorMonedas"></a-entity>
       <a-entity id="contenedorEnemigos"></a-entity>
-
     </a-marker>
 
     <a-entity camera></a-entity>
-
   </a-scene>
 
   <div id="controles" style="
@@ -86,11 +83,11 @@
     z-index:2147483647 !important; display:grid !important;
     grid-template-columns:62px 62px 62px; grid-template-rows:62px 62px 62px;
     gap:6px; pointer-events:auto !important;">
-    <button onclick="mover('arriba')"    style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">⬆️</button>
-    <button onclick="mover('izquierda')" style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">⬅️</button>
-    <button onclick="girar('izq')"       style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation; -webkit-user-select:none;">🔄</button>
-    <button onclick="mover('derecha')"   style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">➡️</button>
-    <button onclick="mover('abajo')"     style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation; -webkit-user-select:none;">⬇️</button>
+    <button onclick="mover('arriba')"    style="grid-column:2; grid-row:1; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation;">⬆️</button>
+    <button onclick="mover('izquierda')" style="grid-column:1; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation;">⬅️</button>
+    <button onclick="girar('izq')"       style="grid-column:2; grid-row:2; width:62px; height:62px; font-size:22px; border-radius:12px; border:2px solid white; background:rgba(255,215,0,0.95); color:black; padding:0; touch-action:manipulation;">🔄</button>
+    <button onclick="mover('derecha')"   style="grid-column:3; grid-row:2; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation;">➡️</button>
+    <button onclick="mover('abajo')"     style="grid-column:2; grid-row:3; width:62px; height:62px; font-size:26px; border-radius:12px; border:2px solid white; background:rgba(30,30,30,0.95); color:white; padding:0; touch-action:manipulation;">⬇️</button>
   </div>
 
 <script>
@@ -98,6 +95,8 @@ let puntos = 0, tiempo = 90, nivel = 1;
 let partidaActiva = true;
 let intervaloTiempo = null;
 let record = parseInt(localStorage.getItem('arQuestRecord')) || 0;
+let monedasTotales = 0;
+let monedasRecogidas = 0;
 
 const MAX_NIVEL = 3;
 const TIEMPOS    = { 1: 90, 2: 60, 3: 40 };
@@ -114,7 +113,6 @@ const $puntos = document.getElementById('puntos');
 const $tiempo = document.getElementById('tiempo');
 const $record = document.getElementById('record');
 const $nivel  = document.getElementById('nivel');
-const $victoria = document.getElementById('victoria');
 $record.textContent = record;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -127,9 +125,9 @@ function sonar(freq=800, dur=0.12, tipo='sine'){
   g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+dur);
   o.start(); o.stop(audioCtx.currentTime+dur);
 }
-const sMoneda = () => sonar(1200,0.15,'square');
-const sEnemigo = () => sonar(180,0.35,'sawtooth');
-const sVictoria = () => [523,659,784,1046].forEach((f,i)=>
+const sonidoMoneda  = () => sonar(1200, 0.15, 'square');
+const sonidoEnemigo = () => sonar(180, 0.35, 'sawtooth');
+const sonidoVictoria = () => [523,659,784,1046].forEach((f,i)=>
   setTimeout(()=>sonar(f,0.25,'triangle'), i*180));
 
 function actualizarRobot(){
@@ -166,11 +164,22 @@ function detectarColisiones(){
     const dz = pos.z - robotZ;
     const dist = Math.sqrt(dx*dx + dz*dz);
     if(dist < radioColision){
-      if(obj.classList.contains('moneda'))       { puntos += 10; sMoneda();  }
-      else if(obj.classList.contains('enemigo')) { puntos -= 5;  sEnemigo(); }
+      if(obj.classList.contains('moneda')) {
+        puntos += 10;
+        sonidoMoneda();
+        monedasRecogidas++;
+      } else if(obj.classList.contains('enemigo')) {
+        puntos -= 5;
+        sonidoEnemigo();
+      }
       if(puntos<0) puntos=0;
       $puntos.textContent = puntos;
       obj.setAttribute('visible', false);
+
+      // 🎯 ¿Ya recogió TODAS las monedas?
+      if (monedasRecogidas >= monedasTotales) {
+        pasarNivel();
+      }
     }
   });
 }
@@ -211,15 +220,71 @@ function crearEnemigo(){
 function cargarNivel(){
   document.getElementById('contenedorMonedas').innerHTML = '';
   document.getElementById('contenedorEnemigos').innerHTML = '';
-  for(let i=0; i<MONEDAS_N[nivel]; i++)
+
+  monedasTotales = MONEDAS_N[nivel];
+  monedasRecogidas = 0;
+
+  for(let i=0; i<monedasTotales; i++)
     document.getElementById('contenedorMonedas').appendChild(crearMoneda());
   for(let i=0; i<ENEMIGOS_N[nivel]; i++)
     document.getElementById('contenedorEnemigos').appendChild(crearEnemigo());
+
   robotX = 0; robotZ = 0; robotRot = 0;
   actualizarRobot();
+
   tiempo = TIEMPOS[nivel];
   $tiempo.textContent = tiempo;
   $nivel.textContent = nivel;
+}
+
+/* 🎉 Pasar de nivel */
+function pasarNivel() {
+  clearInterval(intervaloTiempo);
+
+  if (nivel < MAX_NIVEL) {
+    mostrarMensaje(`🎉 ¡Nivel ${nivel} completado!`, `Pasando al nivel ${nivel + 1}...`);
+    setTimeout(() => {
+      nivel++;
+      cargarNivel();
+      iniciarTemporizador();
+    }, 2000);
+  } else {
+    partidaActiva = false;
+    sonidoVictoria();
+
+    if (puntos > record) {
+      record = puntos;
+      localStorage.setItem('arQuestRecord', record);
+      $record.textContent = record;
+    }
+
+    document.getElementById('puntosFinales').textContent = 'Puntos: ' + puntos;
+    document.getElementById('recordFinal').textContent = 'Récord: ' + record;
+    document.getElementById('victoria').style.display = 'block';
+  }
+}
+
+/* 📢 Mensaje flotante */
+function mostrarMensaje(titulo, subtitulo = '') {
+  const msg = document.createElement('div');
+  msg.id = 'mensajeNivel';
+  msg.innerHTML = `
+    <div style="font-size:34px; color:#FFD700; font-weight:bold;">${titulo}</div>
+    <div style="font-size:18px; margin-top:10px;">${subtitulo}</div>
+  `;
+  msg.style.cssText = `
+    position: fixed; inset: 0; z-index: 2147483647;
+    background: rgba(0,0,0,0.85);
+    color: white; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; font-family: Arial, sans-serif;
+    pointer-events: none;
+  `;
+  document.body.appendChild(msg);
+  setTimeout(() => {
+    const el = document.getElementById('mensajeNivel');
+    if (el) el.remove();
+  }, 1800);
 }
 
 function iniciarTemporizador(){
@@ -230,23 +295,9 @@ function iniciarTemporizador(){
     $tiempo.textContent = tiempo;
     if(tiempo<=0){
       clearInterval(intervaloTiempo);
-      if(nivel < MAX_NIVEL){
-        nivel++;
-        alert(`¡Pasaste al nivel ${nivel}!`);
-        cargarNivel();
-        iniciarTemporizador();
-      } else {
-        partidaActiva = false;
-        sVictoria();
-        if(puntos > record){
-          record = puntos;
-          localStorage.setItem('arQuestRecord', record);
-          $record.textContent = record;
-        }
-        document.getElementById('puntosFinales').textContent = 'Puntos: ' + puntos;
-        document.getElementById('recordFinal').textContent = 'Récord: ' + record;
-        $victoria.style.display = 'block';
-      }
+      // Si se acaba el tiempo → pierde nivel (no avanza)
+      mostrarMensaje(`⏰ ¡Se acabó el tiempo!`, `Reinicia para intentarlo de nuevo`);
+      partidaActiva = false;
     }
   }, 1000);
 }
@@ -254,7 +305,9 @@ function iniciarTemporizador(){
 function reiniciarJuego(){
   puntos = 0; nivel = 1; partidaActiva = true;
   $puntos.textContent = puntos;
-  $victoria.style.display = 'none';
+  document.getElementById('victoria').style.display = 'none';
+  const msgViejo = document.getElementById('mensajeNivel');
+  if (msgViejo) msgViejo.remove();
   cargarNivel();
   iniciarTemporizador();
 }
